@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="vip.wqs.commission.modular.config.mapper.WineCommissionMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="vip.wqs.commission.modular.config.entity.WineCommission">
+        <id column="ID" property="id" />
+        <result column="STORE_ID" property="storeId" />
+        <result column="PRODUCT_ID" property="productId" />
+        <result column="PLATFORM_RATE" property="platformRate" />
+        <result column="DEVICE_OWNER_RATE" property="deviceOwnerRate" />
+        <result column="LOCATION_PROVIDER_RATE" property="locationProviderRate" />
+        <result column="STORE_MANAGER_RATE" property="storeManagerRate" />
+        <result column="SUPPLIER_RATE" property="supplierRate" />
+        <result column="EFFECTIVE_DATE" property="effectiveDate" />
+        <result column="EXPIRY_DATE" property="expiryDate" />
+        <result column="STATUS" property="status" />
+        <result column="SORT_CODE" property="sortCode" />
+        <result column="REMARK" property="remark" />
+        <result column="EXT_JSON" property="extJson" />
+        <result column="DELETE_FLAG" property="deleteFlag" />
+        <result column="CREATE_TIME" property="createTime" />
+        <result column="CREATE_USER" property="createUser" />
+        <result column="UPDATE_TIME" property="updateTime" />
+        <result column="UPDATE_USER" property="updateUser" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        ID, STORE_ID, PRODUCT_ID, PLATFORM_RATE, DEVICE_OWNER_RATE, LOCATION_PROVIDER_RATE, 
+        STORE_MANAGER_RATE, SUPPLIER_RATE, EFFECTIVE_DATE, EXPIRY_DATE, STATUS, SORT_CODE, 
+        REMARK, EXT_JSON, DELETE_FLAG, CREATE_TIME, CREATE_USER, UPDATE_TIME, UPDATE_USER
+    </sql>
+
+</mapper> 

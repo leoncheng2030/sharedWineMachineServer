@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="vip.wqs.commission.modular.record.mapper.WineCommissionRecordMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="vip.wqs.commission.modular.record.entity.WineCommissionRecord">
+        <id column="ID" property="id" />
+        <result column="ORDER_ID" property="orderId" />
+        <result column="ORDER_NO" property="orderNo" />
+        <result column="USER_ID" property="userId" />
+        <result column="USER_NICKNAME" property="userNickname" />
+        <result column="DEVICE_ID" property="deviceId" />
+        <result column="DEVICE_CODE" property="deviceCode" />
+        <result column="WINE_ID" property="wineId" />
+        <result column="WINE_NAME" property="wineName" />
+        <result column="ORDER_AMOUNT" property="orderAmount" />
+        <result column="COMMISSION_TYPE" property="commissionType" />
+        <result column="COMMISSION_RATE" property="commissionRate" />
+        <result column="COMMISSION_AMOUNT" property="commissionAmount" />
+        <result column="STATUS" property="status" />
+        <result column="CALCULATE_TIME" property="calculateTime" />
+        <result column="SETTLE_TIME" property="settleTime" />
+        <result column="REMARK" property="remark" />
+        <result column="EXT_JSON" property="extJson" />
+        <result column="CREATE_TIME" property="createTime" />
+        <result column="UPDATE_TIME" property="updateTime" />
+        <result column="CREATE_USER" property="createUser" />
+        <result column="UPDATE_USER" property="updateUser" />
+        <result column="DELETE_FLAG" property="deleteFlag" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        ID, ORDER_ID, ORDER_NO, USER_ID, USER_NICKNAME, DEVICE_ID, DEVICE_CODE, 
+        WINE_ID, WINE_NAME, ORDER_AMOUNT, COMMISSION_TYPE, COMMISSION_RATE, 
+        COMMISSION_AMOUNT, STATUS, CALCULATE_TIME, SETTLE_TIME, REMARK, EXT_JSON, 
+        CREATE_TIME, UPDATE_TIME, CREATE_USER, UPDATE_USER, DELETE_FLAG
+    </sql>
+
+</mapper> 

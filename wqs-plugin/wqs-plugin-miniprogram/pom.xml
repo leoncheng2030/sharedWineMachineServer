@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>vip.wqs</groupId>
+        <artifactId>wqs-plugin</artifactId>
+        <version>3.0.0</version>
+    </parent>
+
+    <artifactId>wqs-plugin-miniprogram</artifactId>
+    <packaging>jar</packaging>
+    <description>微信小程序专用插件</description>
+
+    <dependencies>
+        <!-- 每个插件都要引入自己的对外接口 -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-miniprogram-api</artifactId>
+        </dependency>
+
+        <!-- 公共依赖模块 -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-common</artifactId>
+        </dependency>
+
+        <!-- 权限插件API -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-auth-api</artifactId>
+        </dependency>
+
+        <!-- 系统插件API -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-sys-api</artifactId>
+        </dependency>
+
+        <!-- 客户端插件API -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-client-api</artifactId>
+        </dependency>
+
+        <!-- 设备插件API -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-device-api</artifactId>
+        </dependency>
+
+        <!-- 支付插件API -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-payment-api</artifactId>
+        </dependency>
+
+        <!-- 酒品插件API -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-wine-api</artifactId>
+        </dependency>
+
+        <!-- 门店插件API -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-store-api</artifactId>
+        </dependency>
+
+        <!-- 订单插件API -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-order-api</artifactId>
+        </dependency>
+
+        <!-- 佣金插件API -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-commission-api</artifactId>
+        </dependency>
+
+        <!-- 业务插件API -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-biz-api</artifactId>
+        </dependency>
+
+        <!-- 开发插件API -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-dev-api</artifactId>
+        </dependency>
+
+    </dependencies>
+</project> 

@@ -1,0 +1,61 @@
+-- 订单管理模块权限配置脚本
+-- 参照酒品管理和设备管理模块的菜单结构
+-- 创建日期：2025-01-30
+-- ID范围：1993000000000010000 - 1993000000000099999
+
+-- 1. 创建订单管理目录 (CATALOG类型)
+INSERT INTO `sys_resource` VALUES 
+('1993000000000010000', '0', '订单管理', NULL, 'orderManageCatalog', 'MENU', '1883450100000000000', 'CATALOG', '/order_manage_catalog', NULL, 'shopping-cart-outlined', NULL, 'TRUE', 'YES', 'YES', 400, NULL, 'NOT_DELETE', NOW(), 'SYSTEM', NULL, NULL);
+
+-- 2. 创建订单管理具体菜单 (MENU类型)
+INSERT INTO `sys_resource` VALUES 
+('1993000000000010001', '1993000000000010000', '订单信息', 'orderManage', 'order_manage', 'MENU', '1883450100000000000', 'MENU', '/order/record', 'order/record/index', 'shopping-cart-outlined', NULL, 'TRUE', 'YES', 'YES', 100, NULL, 'NOT_DELETE', NOW(), 'SYSTEM', NULL, NULL);
+
+-- 3. 为订单信息管理添加按钮权限
+INSERT INTO `sys_resource` VALUES 
+('1993000000000010100', '1993000000000010001', '查看', NULL, 'orderManagePage', 'BUTTON', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 100, NULL, 'NOT_DELETE', NULL, NULL, NULL, NULL),
+('1993000000000010101', '1993000000000010001', '新增', NULL, 'orderManageAdd', 'BUTTON', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 110, NULL, 'NOT_DELETE', NULL, NULL, NULL, NULL),
+('1993000000000010102', '1993000000000010001', '编辑', NULL, 'orderManageEdit', 'BUTTON', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 120, NULL, 'NOT_DELETE', NULL, NULL, NULL, NULL),
+('1993000000000010103', '1993000000000010001', '删除', NULL, 'orderManageDelete', 'BUTTON', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 130, NULL, 'NOT_DELETE', NULL, NULL, NULL, NULL),
+('1993000000000010104', '1993000000000010001', '详情', NULL, 'orderManageDetail', 'BUTTON', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 140, NULL, 'NOT_DELETE', NULL, NULL, NULL, NULL),
+('1993000000000010105', '1993000000000010001', '更新状态', NULL, 'orderManageUpdateStatus', 'BUTTON', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 150, NULL, 'NOT_DELETE', NULL, NULL, NULL, NULL),
+('1993000000000010106', '1993000000000010001', '支付订单', NULL, 'orderManagePay', 'BUTTON', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 160, NULL, 'NOT_DELETE', NULL, NULL, NULL, NULL),
+('1993000000000010107', '1993000000000010001', '取消订单', NULL, 'orderManageCancel', 'BUTTON', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 170, NULL, 'NOT_DELETE', NULL, NULL, NULL, NULL),
+('1993000000000010108', '1993000000000010001', '开始出酒', NULL, 'orderManageStartDispense', 'BUTTON', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 180, NULL, 'NOT_DELETE', NULL, NULL, NULL, NULL),
+('1993000000000010109', '1993000000000010001', '完成出酒', NULL, 'orderManageCompleteDispense', 'BUTTON', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 190, NULL, 'NOT_DELETE', NULL, NULL, NULL, NULL);
+
+-- 4. 为超级管理员角色分配订单管理权限
+-- 添加订单管理目录权限
+INSERT INTO `sys_relation` VALUES 
+('1993000000000010200', '1570687866138206208', '1993000000000010000', 'SYS_ROLE_HAS_RESOURCE', '{"menuId":"1993000000000010000","buttonInfo":[]}');
+
+-- 添加订单信息管理权限
+INSERT INTO `sys_relation` VALUES 
+('1993000000000010201', '1570687866138206208', '1993000000000010001', 'SYS_ROLE_HAS_RESOURCE', '{"menuId":"1993000000000010001","buttonInfo":["1993000000000010100","1993000000000010101","1993000000000010102","1993000000000010103","1993000000000010104","1993000000000010105","1993000000000010106","1993000000000010107","1993000000000010108","1993000000000010109"]}');
+
+-- 5. 为超级管理员角色分配API权限
+INSERT INTO `sys_relation` VALUES 
+('1993000000000010300', '1570687866138206208', '/order/record/page', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/order/record/page","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}'),
+('1993000000000010301', '1570687866138206208', '/order/record/list', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/order/record/list","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}'),
+('1993000000000010302', '1570687866138206208', '/order/record/add', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/order/record/add","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}'),
+('1993000000000010303', '1570687866138206208', '/order/record/edit', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/order/record/edit","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}'),
+('1993000000000010304', '1570687866138206208', '/order/record/delete', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/order/record/delete","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}'),
+('1993000000000010305', '1570687866138206208', '/order/record/detail', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/order/record/detail","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}'),
+('1993000000000010306', '1570687866138206208', '/order/record/updateStatus', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/order/record/updateStatus","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}'),
+('1993000000000010307', '1570687866138206208', '/order/record/pay', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/order/record/pay","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}'),
+('1993000000000010308', '1570687866138206208', '/order/record/cancel', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/order/record/cancel","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}'),
+('1993000000000010309', '1570687866138206208', '/order/record/startDispense', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/order/record/startDispense","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}'),
+('1993000000000010310', '1570687866138206208', '/order/record/completeDispense', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/order/record/completeDispense","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}');
+
+-- 6. 添加订单状态字典数据
+-- 首先创建订单状态字典分类
+INSERT INTO `dev_dict` VALUES ('1993000000000020000', '0', '订单状态', 'ORDER_STATUS', 'OrderStatus001', 'BIZ', 200, NULL, 'NOT_DELETE', NOW(), 'SYSTEM', NULL, NULL);
+
+-- 然后添加具体的订单状态选项
+INSERT INTO `dev_dict` VALUES 
+('1993000000000020001', '1993000000000020000', '待支付', 'PENDING_PAYMENT', 'OrderStatus002', 'BIZ', 100, NULL, 'NOT_DELETE', NOW(), 'SYSTEM', NULL, NULL),
+('1993000000000020002', '1993000000000020000', '已支付', 'PAID', 'OrderStatus003', 'BIZ', 200, NULL, 'NOT_DELETE', NOW(), 'SYSTEM', NULL, NULL),
+('1993000000000020003', '1993000000000020000', '出酒中', 'DISPENSING', 'OrderStatus004', 'BIZ', 300, NULL, 'NOT_DELETE', NOW(), 'SYSTEM', NULL, NULL),
+('1993000000000020004', '1993000000000020000', '已完成', 'COMPLETED', 'OrderStatus005', 'BIZ', 400, NULL, 'NOT_DELETE', NOW(), 'SYSTEM', NULL, NULL),
+('1993000000000020005', '1993000000000020000', '已取消', 'CANCELLED', 'OrderStatus006', 'BIZ', 500, NULL, 'NOT_DELETE', NOW(), 'SYSTEM', NULL, NULL),
+('1993000000000020006', '1993000000000020000', '已退款', 'REFUNDED', 'OrderStatus007', 'BIZ', 600, NULL, 'NOT_DELETE', NOW(), 'SYSTEM', NULL, NULL); 

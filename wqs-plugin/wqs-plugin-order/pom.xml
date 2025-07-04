@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>vip.wqs</groupId>
+        <artifactId>wqs-plugin</artifactId>
+        <version>3.0.0</version>
+    </parent>
+
+    <artifactId>wqs-plugin-order</artifactId>
+    <packaging>jar</packaging>
+    <description>订单管理功能插件</description>
+
+    <dependencies>
+        <!-- 每个插件都要引入自己的对外接口 -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-order-api</artifactId>
+        </dependency>
+
+        <!-- 引入登录鉴权接口，用于获取登录用户 -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-auth-api</artifactId>
+        </dependency>
+
+        <!-- 引入系统接口，用于授权角色等功能 -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-sys-api</artifactId>
+        </dependency>
+
+        <!-- 引入开发工具接口，用于配置信息 -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-dev-api</artifactId>
+        </dependency>
+
+        <!-- 引入C端用户接口，用于用户管理 -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-client-api</artifactId>
+        </dependency>
+
+        <!-- 引入酒品管理接口，用于酒品信息 -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-wine-api</artifactId>
+        </dependency>
+
+        <!-- 引入设备管理接口，用于设备控制 -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-device-api</artifactId>
+        </dependency>
+
+        <!-- 引入门店管理接口，用于门店信息 -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-store-api</artifactId>
+        </dependency>
+
+        <!-- 引入佣金管理接口，用于佣金计算 -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-commission-api</artifactId>
+        </dependency>
+    </dependencies>
+
+</project> 

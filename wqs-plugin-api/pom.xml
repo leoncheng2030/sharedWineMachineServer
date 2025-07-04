@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>vip.wqs</groupId>
+        <artifactId>weiqisheng</artifactId>
+        <version>3.0.0</version>
+    </parent>
+
+    <artifactId>wqs-plugin-api</artifactId>
+    <packaging>pom</packaging>
+    <description>插件API接口模块</description>
+
+    <modules>
+        <!-- 登录鉴权插件api接口 -->
+        <module>wqs-plugin-auth-api</module>
+
+        <!-- 业务功能插件api接口 -->
+        <module>wqs-plugin-biz-api</module>
+
+        <!-- C端功能插件api接口 -->
+        <module>wqs-plugin-client-api</module>
+
+        <!-- 开发工具插件api接口 -->
+        <module>wqs-plugin-dev-api</module>
+
+        <!-- 代码生成插件api接口 -->
+        <module>wqs-plugin-gen-api</module>
+
+        <!-- 移动端管理插件api接口 -->
+        <module>wqs-plugin-mobile-api</module>
+
+        <!-- 系统功能插件api接口 -->
+        <module>wqs-plugin-sys-api</module>
+
+        <!-- 酒品管理插件api接口 -->
+        <module>wqs-plugin-wine-api</module>
+
+        <!-- 设备管理插件api接口 -->
+        <module>wqs-plugin-device-api</module>
+
+        <!-- 门店管理插件api接口 -->
+        <module>wqs-plugin-store-api</module>
+
+        <!-- 分销配置插件api接口 -->
+        <module>wqs-plugin-commission-api</module>
+
+        <!-- 订单管理插件api接口 -->
+        <module>wqs-plugin-order-api</module>
+
+        <!-- 小程序插件api接口 -->
+        <module>wqs-plugin-miniprogram-api</module>
+
+        <!-- 支付插件api接口 -->
+        <module>wqs-plugin-payment-api</module>
+
+    </modules>
+</project>
