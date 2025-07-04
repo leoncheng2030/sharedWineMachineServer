@@ -30,6 +30,22 @@ import java.math.BigDecimal;
 @Setter
 public class ClientLoginUser extends SaBaseClientLoginUser {
 
+    /** 微信OpenID */
+    @Schema(description = "微信OpenID")
+    private String wechatOpenid;
+
+    /** 微信UnionID */
+    @Schema(description = "微信UnionID")
+    private String wechatUnionid;
+
+    /** 微信昵称 */
+    @Schema(description = "微信昵称")
+    private String wechatNickname;
+
+    /** 微信头像URL */
+    @Schema(description = "微信头像URL")
+    private String wechatAvatarUrl;
+
     /** 佣金账户总余额 */
     @Schema(description = "佣金账户总余额")
     private BigDecimal commissionBalance;

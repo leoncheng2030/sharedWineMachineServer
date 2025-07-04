@@ -17,8 +17,11 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vip.wqs.commission.api.WineCommissionRecordApi;
 import vip.wqs.order.modular.record.entity.WineOrder;
 import vip.wqs.order.modular.record.enums.OrderStatusEnum;
 import vip.wqs.order.modular.record.mapper.WineOrderMapper;
@@ -37,8 +40,12 @@ import java.util.List;
  * @author wqs
  * @date 2025/01/30
  */
+@Slf4j
 @Service
 public class WineOrderServiceImpl extends ServiceImpl<WineOrderMapper, WineOrder> implements WineOrderService {
+
+    @Autowired
+    private WineCommissionRecordApi wineCommissionRecordApi;
 
     @Override
     public Page<WineOrder> page(WineOrderPageParam wineOrderPageParam) {
@@ -141,8 +148,10 @@ public class WineOrderServiceImpl extends ServiceImpl<WineOrderMapper, WineOrder
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Boolean payOrder(String orderId) {
-        WineOrder wineOrder = this.getById(orderId);
+    public Boolean payOrder(String orderNo) {
+        QueryWrapper<WineOrder> queryWrapper = new QueryWrapper<>();
+        queryWrapper.lambda().eq(WineOrder::getOrderNo, orderNo);
+        WineOrder wineOrder = this.getOne(queryWrapper);
         if (ObjectUtil.isNull(wineOrder)) {
             return false;
         }
@@ -211,10 +220,37 @@ public class WineOrderServiceImpl extends ServiceImpl<WineOrderMapper, WineOrder
             return false;
         }
         
+        // 更新订单状态为已完成
         wineOrder.setStatus(OrderStatusEnum.COMPLETED.getCode());
         wineOrder.setDispenseEndTime(new Date());
         
-        return this.updateById(wineOrder);
+        Boolean updateResult = this.updateById(wineOrder);
+        
+        // 订单状态更新成功后，触发佣金分配
+        if (updateResult) {
+            try {
+                log.info("订单完成，开始分配佣金，订单ID：{}，订单号：{}", orderId, wineOrder.getOrderNo());
+                
+                // 调用佣金分配API
+                Integer commissionCount = wineCommissionRecordApi.distributeCommissionForOrder(
+                        orderId,                    // 订单ID
+                        wineOrder.getOrderNo(),     // 订单号
+                        wineOrder.getTotalAmount(), // 订单金额
+                        wineOrder.getDeviceId(),    // 设备ID
+                        wineOrder.getWineId(),      // 酒品ID
+                        null                        // 门店ID（如果订单中有门店信息可以传入）
+                );
+                
+                log.info("佣金分配完成，订单ID：{}，成功分配{}条佣金记录", orderId, commissionCount);
+                
+            } catch (Exception e) {
+                // 佣金分配失败不影响订单完成，但需要记录错误日志
+                log.error("订单完成后佣金分配失败，订单ID：{}，错误：{}", orderId, e.getMessage(), e);
+                // 这里可以考虑发送通知或者记录到错误表，供后续人工处理
+            }
+        }
+        
+        return updateResult;
     }
 
     @Override

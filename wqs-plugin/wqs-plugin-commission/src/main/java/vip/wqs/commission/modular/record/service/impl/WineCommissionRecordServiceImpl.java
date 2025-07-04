@@ -31,6 +31,12 @@ import vip.wqs.commission.modular.record.param.WineCommissionRecordPageParam;
 import vip.wqs.commission.modular.record.service.WineCommissionRecordService;
 import vip.wqs.common.enums.CommonSortOrderEnum;
 import vip.wqs.common.exception.CommonException;
+import vip.wqs.device.api.DeviceApi;
+import vip.wqs.device.pojo.DevicePojo;
+import vip.wqs.store.api.WineStoreApi;
+import vip.wqs.store.pojo.WineStorePojo;
+import vip.wqs.wine.api.WineProductApi;
+import vip.wqs.wine.pojo.WineProductPojo;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -54,6 +60,16 @@ public class WineCommissionRecordServiceImpl extends ServiceImpl<WineCommissionR
     
     @Autowired
     private WineUserAccountService wineUserAccountService;
+    
+    @Autowired
+    private DeviceApi deviceApi;
+    
+    @Autowired
+    private WineStoreApi wineStoreApi;
+
+    /** 酒品API */
+    @Autowired
+    private WineProductApi wineProductApi;
 
     @Override
     @TransMethodResult
@@ -429,13 +445,19 @@ public class WineCommissionRecordServiceImpl extends ServiceImpl<WineCommissionR
             if (!commissionRecords.isEmpty()) {
                 this.saveBatch(commissionRecords);
                 
-                // 4. 更新用户账户余额（暂时注释，待账户服务实现完成后启用）
+                // 4. 更新用户账户余额
                 for (WineCommissionRecord record : commissionRecords) {
                     try {
-                        // TODO: 待WineUserAccountService.addCommission方法实现后启用
-                        // wineUserAccountService.addCommission(record.getUserId(), record.getCommissionAmount(), 
-                        //         "ORDER_COMMISSION", "订单佣金：" + orderNo);
-                        log.info("更新用户账户余额（暂未实现），用户ID：{}，佣金金额：{}", record.getUserId(), record.getCommissionAmount());
+                        // 获取佣金金额并更新账户余额
+                        BigDecimal commissionAmount = record.getCommissionAmount();
+                        if (commissionAmount == null || commissionAmount.compareTo(BigDecimal.ZERO) <= 0) {
+                            log.warn("佣金记录中佣金金额无效，跳过账户余额更新，用户ID：{}，佣金金额：{}", record.getUserId(), commissionAmount);
+                            continue;
+                        }
+                        
+                        wineUserAccountService.addCommission(record.getUserId(), commissionAmount, 
+                                "ORDER_COMMISSION", "订单佣金：" + orderNo);
+                        log.info("更新用户账户余额成功，用户ID：{}，佣金金额：{}", record.getUserId(), commissionAmount);
                     } catch (Exception e) {
                         log.error("更新用户账户余额失败，用户ID：{}，佣金金额：{}，错误：{}", 
                                 record.getUserId(), record.getCommissionAmount(), e.getMessage(), e);
@@ -473,66 +495,106 @@ public class WineCommissionRecordServiceImpl extends ServiceImpl<WineCommissionR
                     return platformUserId;
                     
                 case "DEVICE_OWNER":
-                    // 从设备表获取设备拥有者ID
+                    // 从设备表获取设备管理员ID (设备拥有者)
                     if (StrUtil.isNotBlank(deviceId)) {
-                        // TODO: 调用设备API获取ownerId
-                        // String deviceOwnerUserId = wineDeviceApi.getDeviceOwner(deviceId);
-                        // if (StrUtil.isNotBlank(deviceOwnerUserId)) {
-                        //     log.debug("找到设备方用户ID：{}，设备ID：{}", deviceOwnerUserId, deviceId);
-                        //     return deviceOwnerUserId;
-                        // }
-                        log.warn("设备方用户ID查找未实现，设备ID：{}", deviceId);
-                        return null;
+                        try {
+                            DevicePojo deviceDetail = deviceApi.getDeviceDetail(deviceId);
+                            if (deviceDetail != null && StrUtil.isNotBlank(deviceDetail.getManagerUserId())) {
+                                log.debug("找到设备拥有者用户ID：{}，设备ID：{}", deviceDetail.getManagerUserId(), deviceId);
+                                return deviceDetail.getManagerUserId();
+                            } else {
+                                log.warn("设备不存在或未设置管理员，设备ID：{}", deviceId);
+                                return null;
+                            }
+                        } catch (Exception e) {
+                            log.error("查询设备信息失败，设备ID：{}，错误：{}", deviceId, e.getMessage(), e);
+                            return null;
+                        }
                     } else {
-                        log.warn("查找设备方用户ID时，设备ID为空");
+                        log.warn("查找设备拥有者用户ID时，设备ID为空");
                         return null;
                     }
                     
                 case "LOCATION_PROVIDER":
-                    // 从设备表或门店表获取场地提供者ID
-                    if (StrUtil.isNotBlank(deviceId)) {
-                        // TODO: 调用设备API获取locationProviderId
-                        // String locationProviderUserId = wineDeviceApi.getLocationProvider(deviceId);
-                        // if (StrUtil.isNotBlank(locationProviderUserId)) {
-                        //     log.debug("找到场地方用户ID：{}，设备ID：{}", locationProviderUserId, deviceId);
-                        //     return locationProviderUserId;
-                        // }
-                        log.warn("场地方用户ID查找未实现，设备ID：{}", deviceId);
-                        return null;
+                    // 场地提供者与门店管理员是同一个角色，都从门店管理员字段获取
+                    String targetStoreId = storeId;
+                    
+                    // 如果没有传入storeId，通过deviceId查询设备所属门店
+                    if (StrUtil.isBlank(targetStoreId) && StrUtil.isNotBlank(deviceId)) {
+                        try {
+                            DevicePojo deviceDetail = deviceApi.getDeviceDetail(deviceId);
+                            if (deviceDetail != null && StrUtil.isNotBlank(deviceDetail.getStoreId())) {
+                                targetStoreId = deviceDetail.getStoreId();
+                                log.debug("通过设备ID查询到门店ID：{}，设备ID：{}", targetStoreId, deviceId);
+                            } else {
+                                log.warn("设备不存在或未关联门店，设备ID：{}", deviceId);
+                                return null;
+                            }
+                        } catch (Exception e) {
+                            log.error("查询设备信息失败，设备ID：{}，错误：{}", deviceId, e.getMessage(), e);
+                            return null;
+                        }
+                    }
+                    
+                    // 从门店表获取门店管理员ID（场地提供者）
+                    if (StrUtil.isNotBlank(targetStoreId)) {
+                        try {
+                            WineStorePojo storeDetail = wineStoreApi.getWineStoreDetail(targetStoreId);
+                            if (storeDetail != null && StrUtil.isNotBlank(storeDetail.getStoreManagerId())) {
+                                log.debug("找到场地提供者用户ID：{}，门店ID：{}", storeDetail.getStoreManagerId(), targetStoreId);
+                                return storeDetail.getStoreManagerId();
+                            } else {
+                                log.warn("门店不存在或未设置管理员，门店ID：{}", targetStoreId);
+                                return null;
+                            }
+                        } catch (Exception e) {
+                            log.error("查询门店信息失败，门店ID：{}，错误：{}", targetStoreId, e.getMessage(), e);
+                            return null;
+                        }
                     } else {
-                        log.warn("查找场地方用户ID时，设备ID为空");
+                        log.warn("查找场地提供者用户ID时，门店ID为空");
                         return null;
                     }
                     
                 case "STORE_MANAGER":
                     // 从门店表获取门店管理员ID
                     if (StrUtil.isNotBlank(storeId)) {
-                        // TODO: 调用门店API获取managerId
-                        // String storeManagerUserId = wineStoreApi.getStoreManager(storeId);
-                        // if (StrUtil.isNotBlank(storeManagerUserId)) {
-                        //     log.debug("找到门店管理员用户ID：{}，门店ID：{}", storeManagerUserId, storeId);
-                        //     return storeManagerUserId;
-                        // }
-                        log.warn("门店管理员用户ID查找未实现，门店ID：{}", storeId);
-                        return null;
+                        try {
+                            WineStorePojo storeDetail = wineStoreApi.getWineStoreDetail(storeId);
+                            if (storeDetail != null && StrUtil.isNotBlank(storeDetail.getStoreManagerId())) {
+                                log.debug("找到门店管理员用户ID：{}，门店ID：{}", storeDetail.getStoreManagerId(), storeId);
+                                return storeDetail.getStoreManagerId();
+                            } else {
+                                log.warn("门店不存在或未设置管理员，门店ID：{}", storeId);
+                                return null;
+                            }
+                        } catch (Exception e) {
+                            log.error("查询门店信息失败，门店ID：{}，错误：{}", storeId, e.getMessage(), e);
+                            return null;
+                        }
                     } else {
                         log.warn("查找门店管理员用户ID时，门店ID为空");
                         return null;
                     }
                     
                 case "SUPPLIER":
-                    // 从酒品表获取供应商ID
+                    // 从酒品表获取供应商客户端ID
                     if (StrUtil.isNotBlank(wineId)) {
-                        // TODO: 调用酒品API获取supplierId
-                        // String supplierUserId = wineProductApi.getSupplier(wineId);
-                        // if (StrUtil.isNotBlank(supplierUserId)) {
-                        //     log.debug("找到供应商用户ID：{}，酒品ID：{}", supplierUserId, wineId);
-                        //     return supplierUserId;
-                        // }
-                        log.warn("供应商用户ID查找未实现，酒品ID：{}", wineId);
-                        return null;
+                        try {
+                            WineProductPojo productDetail = wineProductApi.getWineProductDetail(wineId);
+                            if (productDetail != null && StrUtil.isNotBlank(productDetail.getSupplierId())) {
+                                log.debug("找到供应商客户端ID：{}，酒品ID：{}", productDetail.getSupplierId(), wineId);
+                                return productDetail.getSupplierId();
+                            } else {
+                                log.warn("酒品不存在或未设置供应商，酒品ID：{}", wineId);
+                                return null;
+                            }
+                        } catch (Exception e) {
+                            log.error("查询酒品信息失败，酒品ID：{}，错误：{}", wineId, e.getMessage(), e);
+                            return null;
+                        }
                     } else {
-                        log.warn("查找供应商用户ID时，酒品ID为空");
+                        log.warn("查找供应商客户端ID时，酒品ID为空");
                         return null;
                     }
                     
@@ -596,10 +658,10 @@ public class WineCommissionRecordServiceImpl extends ServiceImpl<WineCommissionR
             record.setDeviceId(deviceId);
             record.setWineId(wineId);
             // 设置金额信息
-            // record.setOrderAmount(orderAmount);  // 暂时注释，待实体类完善后启用
+            record.setOrderAmount(orderAmount);
             record.setCommissionType(commissionType);
-            // record.setCommissionRate(commissionRate);  // 暂时注释，待实体类完善后启用
-            // record.setCommissionAmount(commissionAmount);  // 暂时注释，待实体类完善后启用
+            record.setCommissionRate(commissionRate);
+            record.setCommissionAmount(commissionAmount);
             // 设置状态和时间
             record.setStatus("CALCULATED"); // 初始状态为已计算
             record.setCalculateTime(new Date());

@@ -82,6 +82,14 @@ public class WineProductPojo implements Serializable {
     @Schema(description = "生产厂家")
     private String manufacturer;
 
+    /** 供应商客户端ID */
+    @Schema(description = "供应商客户端ID")
+    private String supplierId;
+
+    /** 供应商名称 */
+    @Schema(description = "供应商名称")
+    private String supplierName;
+
     /** 建议零售价 */
     @Schema(description = "建议零售价")
     private BigDecimal suggestedPrice;

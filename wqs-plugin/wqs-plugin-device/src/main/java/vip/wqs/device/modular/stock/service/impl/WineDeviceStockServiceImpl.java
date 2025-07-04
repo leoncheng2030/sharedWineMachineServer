@@ -16,6 +16,8 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.fhs.core.trans.anno.TransMethodResult;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -44,10 +46,11 @@ import java.util.List;
 public class WineDeviceStockServiceImpl extends ServiceImpl<WineDeviceStockMapper, WineDeviceStock>
         implements WineDeviceStockService {
 
-    @Autowired
+    @Resource
     private WineStockLogService wineStockLogService;
 
     @Override
+    @TransMethodResult
     public Page<WineDeviceStock> page(WineDeviceStockPageParam param) {
         QueryWrapper<WineDeviceStock> queryWrapper = new QueryWrapper<>();
 
@@ -205,6 +208,7 @@ public class WineDeviceStockServiceImpl extends ServiceImpl<WineDeviceStockMappe
     }
 
     @Override
+    @TransMethodResult
     public List<WineDeviceStock> getLowStockList() {
         QueryWrapper<WineDeviceStock> queryWrapper = new QueryWrapper<>();
         queryWrapper.le("stock_quantity", "alert_threshold");
@@ -212,6 +216,7 @@ public class WineDeviceStockServiceImpl extends ServiceImpl<WineDeviceStockMappe
     }
 
     @Override
+    @TransMethodResult
     public List<WineDeviceStock> getOutOfStockList() {
         QueryWrapper<WineDeviceStock> queryWrapper = new QueryWrapper<>();
         queryWrapper.le("stock_quantity", 0);
@@ -219,6 +224,7 @@ public class WineDeviceStockServiceImpl extends ServiceImpl<WineDeviceStockMappe
     }
 
     @Override
+    @TransMethodResult
     public List<WineDeviceStock> getStockByDeviceId(String deviceId) {
         if (StrUtil.isBlank(deviceId)) {
             throw new CommonException("设备ID不能为空");
@@ -229,6 +235,7 @@ public class WineDeviceStockServiceImpl extends ServiceImpl<WineDeviceStockMappe
     }
 
     @Override
+    @TransMethodResult
     public List<WineDeviceStock> getStockByProductId(String productId) {
         if (StrUtil.isBlank(productId)) {
             throw new CommonException("酒品ID不能为空");

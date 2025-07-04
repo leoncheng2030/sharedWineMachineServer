@@ -161,4 +161,46 @@ public interface DeviceApi {
      * @date 2025/01/30
      */
     Boolean updateDeviceConnectionStatus(String deviceId, String connectionStatus, String userId, String checkResult);
+
+    /**
+     * 获取设备控制加密指令
+     * 小程序端调用此接口获取加密控制指令，然后通过蓝牙发送给设备
+     *
+     * @param deviceId 设备ID
+     * @param orderId 订单ID
+     * @param minute 通电分钟数（可选）
+     * @param second 通电秒数（可选）
+     * @return 控制指令结果
+     * @author AI Assistant
+     * @date 2025/01/30
+     */
+    String getDeviceControlCommand(String deviceId, String orderId, Integer minute, Integer second);
+
+    /**
+     * 验证设备控制权限
+     * 检查订单和设备是否可以进行控制操作
+     *
+     * @param orderId 订单ID
+     * @param deviceId 设备ID
+     * @param userId 用户ID
+     * @return 是否有权限
+     * @author AI Assistant
+     * @date 2025/01/30
+     */
+    Boolean validateDeviceControlPermission(String orderId, String deviceId, String userId);
+
+    /**
+     * 更新设备控制执行结果
+     * 小程序端执行设备控制后，调用此方法更新执行状态
+     *
+     * @param orderId 订单ID
+     * @param deviceId 设备ID
+     * @param success 是否执行成功
+     * @param message 执行结果消息
+     * @param userId 操作用户ID
+     * @return 是否更新成功
+     * @author AI Assistant
+     * @date 2025/01/30
+     */
+    Boolean updateDeviceControlResult(String orderId, String deviceId, Boolean success, String message, String userId);
 } 

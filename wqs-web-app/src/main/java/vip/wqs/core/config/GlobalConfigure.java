@@ -170,7 +170,10 @@ public class GlobalConfigure implements WebMvcConfigurer {
             "/miniprogram/wine/recommended",
             "/miniprogram/wine/hot",
             "/miniprogram/wine/detail",
-            "/miniprogram/store/**"
+            "/miniprogram/store/**",
+
+            "/payment/wechat/notify",
+            "/payment/wechat/refund/notify",
     };
 
     /**

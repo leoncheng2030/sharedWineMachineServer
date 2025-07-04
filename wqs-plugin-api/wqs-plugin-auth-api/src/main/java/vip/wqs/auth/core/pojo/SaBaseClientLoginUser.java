@@ -46,6 +46,10 @@ public abstract class SaBaseClientLoginUser {
     @Schema(description = "账号")
     private String account;
 
+    /** openID */
+    @Schema(description = "openID")
+    private String wechatOpenid;
+
     /** 姓名 */
     @Schema(description = "姓名")
     private String name;

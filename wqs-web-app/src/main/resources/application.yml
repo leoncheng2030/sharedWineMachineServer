@@ -1,0 +1,9 @@
+ # 在现有配置基础上添加设备控制配置
+wqs:
+  device:
+    encrypt:
+      api:
+        # 第三方加密接口地址
+        url: https://gateway.biandianxia.com/encrypt/sharedevice
+        # 接口超时时间(毫秒)
+        timeout: 10000

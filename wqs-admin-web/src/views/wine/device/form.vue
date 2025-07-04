@@ -178,6 +178,7 @@
 		deviceCode: [{ required: true, message: '请输入设备编码', trigger: 'blur' }],
 		deviceName: [{ required: true, message: '请输入设备名称', trigger: 'blur' }],
 		storeId: [{ required: true, message: '请选择所属门店', trigger: 'change' }],
+		managerUserId: [{ required: true, message: '请选择设备管理员', trigger: 'change' }],
 		status: [{ required: true, message: '请选择设备状态', trigger: 'change' }],
 		sortCode: [{ required: true, message: '请输入排序码', trigger: 'blur' }]
 	}

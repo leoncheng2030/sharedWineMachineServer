@@ -136,6 +136,26 @@
 						</a-col>
 					</a-row>
 
+					<a-row :gutter="16">
+						<a-col :span="12">
+							<a-form-item label="生产厂家" name="manufacturer">
+								<a-input v-model:value="formData.manufacturer" placeholder="请输入生产厂家" allow-clear />
+							</a-form-item>
+						</a-col>
+						<a-col :span="12">
+							<a-form-item label="供应商" name="supplierId">
+								<xn-client-user-selector
+									ref="supplierSelectorRef"
+									:radio-model="true"
+									:clientUserPageApi="selectorApiFunction.clientUserPageApi"
+									:clientUserListByIdListApi="selectorApiFunction.clientUserListByIdListApi"
+									v-model:value="formData.supplierId"
+									@onBack="supplierSelectorOnBack"
+								/>
+							</a-form-item>
+						</a-col>
+					</a-row>
+
 					<a-form-item label="状态" name="status">
 						<a-radio-group v-model:value="formData.status">
 							<a-radio value="ENABLE">启用</a-radio>
@@ -211,6 +231,7 @@
 	import { required } from '@/utils/formRules'
 	import wineProductApi from '@/api/wine/wineProductApi'
 	import wineCategoryApi from '@/api/wine/wineCategoryApi'
+	import clientUserApi from '@/api/client/clientUserApi'
 
 	const emit = defineEmits(['successful'])
 
@@ -218,12 +239,27 @@
 	const submitLoading = ref(false)
 	const formRef = ref()
 	const activeTabsKey = ref('1')
+	const supplierSelectorRef = ref()
 
 	// 表单数据
 	const formData = ref({})
 
 	// 分类数据
 	const categoryData = ref([])
+
+	// 选择器API配置
+	const selectorApiFunction = {
+		clientUserPageApi: (param) => {
+			return clientUserApi.userPage(param).then((data) => {
+				return Promise.resolve(data)
+			})
+		},
+		clientUserListByIdListApi: (param) => {
+			return clientUserApi.userListByIdList(param).then((data) => {
+				return Promise.resolve(data)
+			})
+		}
+	}
 
 	// 图片上传相关
 	const fileList = ref([])
@@ -236,6 +272,7 @@
 		productName: [required('请输入酒品名称')],
 		productCode: [required('请输入酒品编码')],
 		categoryId: [required('请选择酒品分类')],
+		supplierId: [required('请选择供应商')],
 		unitPrice: [required('请输入基础单价'), { type: 'number', min: 0.0001, message: '基础单价必须大于0' }],
 		suggestedPrice: [{ type: 'number', min: 0, message: '建议零售价不能小于0' }],
 		alcoholContent: [{ type: 'number', min: 0, max: 100, message: '酒精度必须在0-100之间' }],
@@ -248,6 +285,13 @@
 		wineCategoryApi.categoryTree({}).then((data) => {
 			categoryData.value = data
 		})
+	}
+
+	// 供应商选择器回调
+	const supplierSelectorOnBack = (data) => {
+		if (data && data.length > 0) {
+			console.log('选择的供应商:', data[0])
+		}
 	}
 
 	// 图片上传相关方法

@@ -33,13 +33,14 @@ import vip.wqs.payment.modular.manage.entity.PaymentConfig;
 import vip.wqs.payment.modular.manage.enums.PaymentTypeEnum;
 import vip.wqs.payment.modular.manage.service.PaymentConfigService;
 import vip.wqs.payment.modular.manage.util.PaymentConfigUtil;
-import vip.wqs.payment.modular.wechat.param.WechatPayCreateParam;
-import vip.wqs.payment.modular.wechat.param.WechatPayQueryParam;
-import vip.wqs.payment.modular.wechat.param.WechatRefundParam;
-import vip.wqs.payment.modular.wechat.result.WechatPayCreateResult;
-import vip.wqs.payment.modular.wechat.result.WechatPayQueryResult;
-import vip.wqs.payment.modular.wechat.result.WechatRefundResult;
+import vip.wqs.payment.api.param.WechatPayCreateParam;
+import vip.wqs.payment.api.param.WechatPayQueryParam;
+import vip.wqs.payment.api.param.WechatRefundParam;
+import vip.wqs.payment.api.result.WechatPayCreateResult;
+import vip.wqs.payment.api.result.WechatPayQueryResult;
+import vip.wqs.payment.api.result.WechatRefundResult;
 import vip.wqs.payment.modular.wechat.service.WechatPayService;
+import vip.wqs.order.api.WineOrderApi;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -60,6 +61,9 @@ public class WechatPayServiceImpl implements WechatPayService {
 
     @Resource
     private PaymentConfigService paymentConfigService;
+
+    @Resource
+    private WineOrderApi wineOrderApi;
 
     /** 微信支付服务缓存 */
     private final ConcurrentHashMap<String, WxPayService> wxPayServiceCache = new ConcurrentHashMap<>();
@@ -167,9 +171,13 @@ public class WechatPayServiceImpl implements WechatPayService {
             
             // 调用统一下单API
             WxPayUnifiedOrderResult unifiedOrderResult = wxPayService.unifiedOrder(request);
+            log.info("微信统一下单成功，prepayId：{}", unifiedOrderResult.getPrepayId());
             
-            // 构建小程序支付参数 - 修复API调用
+            // 构建小程序支付参数 - 使用prepayId创建小程序支付参数
             WxPayMpOrderResult mpOrderResult = wxPayService.createOrder(request);
+            log.info("微信小程序支付参数创建成功，timeStamp：{}，nonceStr：{}，packageValue：{}，signType：{}，paySign：{}", 
+                mpOrderResult.getTimeStamp(), mpOrderResult.getNonceStr(), mpOrderResult.getPackageValue(), 
+                mpOrderResult.getSignType(), mpOrderResult.getPaySign());
             
             // 构建返回结果
             WechatPayCreateResult result = new WechatPayCreateResult();
@@ -260,7 +268,7 @@ public class WechatPayServiceImpl implements WechatPayService {
             // 调用统一下单API
             WxPayUnifiedOrderResult unifiedOrderResult = wxPayService.unifiedOrder(request);
             
-            // 构建APP支付参数 - 修复API调用
+            // 构建APP支付参数
             WxPayAppOrderResult appOrderResult = wxPayService.createOrder(request);
             
             // 构建返回结果
@@ -508,6 +516,106 @@ public class WechatPayServiceImpl implements WechatPayService {
         } catch (Exception e) {
             log.error("验证微信退款回调失败：{}", e.getMessage(), e);
             throw new CommonException("验证微信退款回调失败：" + e.getMessage());
+        }
+    }
+
+    @Override
+    public String handlePayNotify(String requestBody, String signature, String timestamp, String nonce) {
+        try {
+            log.info("处理微信支付回调，timestamp：{}，nonce：{}", timestamp, nonce);
+            
+            WxPayService wxPayService = getWxPayService("WECHAT_MINI"); // 默认使用小程序支付类型
+            
+            // 解析回调数据
+            WxPayOrderNotifyResult notifyResult = wxPayService.parseOrderNotifyResult(requestBody);
+            
+            // 检查支付结果
+            if (!"SUCCESS".equals(notifyResult.getResultCode()) || !"SUCCESS".equals(notifyResult.getReturnCode())) {
+                log.warn("微信支付失败，订单号：{}，错误信息：{}", notifyResult.getOutTradeNo(), notifyResult.getReturnMsg());
+                return "<xml><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[OK]]></return_msg></xml>";
+            }
+            
+            // 根据订单号查询订单信息
+            String outTradeNo = notifyResult.getOutTradeNo();
+            try {
+                // 调用订单服务更新订单状态为已支付
+                Boolean payResult = wineOrderApi.payOrder(outTradeNo);
+                if (payResult) {
+                    log.info("订单支付成功，订单号：{}，微信交易号：{}", outTradeNo, notifyResult.getTransactionId());
+                } else {
+                    log.warn("订单支付状态更新失败，订单号：{}", outTradeNo);
+                }
+            } catch (Exception e) {
+                log.error("处理订单支付回调业务逻辑失败，订单号：{}，错误：{}", outTradeNo, e.getMessage(), e);
+                // 即使业务逻辑处理失败，也要返回成功给微信，避免重复回调
+                return "<xml><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[OK]]></return_msg></xml>";
+            }
+            
+            log.info("处理微信支付回调成功，订单号：{}", outTradeNo);
+            
+            // 返回成功响应给微信
+            return "<xml><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[OK]]></return_msg></xml>";
+        } catch (Exception e) {
+            log.error("处理微信支付回调失败：{}", e.getMessage(), e);
+            // 返回失败响应给微信，微信会重新回调
+            return "<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[" + e.getMessage() + "]]></return_msg></xml>";
+        }
+    }
+
+    @Override
+    public String handleRefundNotify(String requestBody, String signature, String timestamp, String nonce) {
+        try {
+            log.info("处理微信退款回调，timestamp：{}，nonce：{}", timestamp, nonce);
+            
+            WxPayService wxPayService = getWxPayService("WECHAT_MINI"); // 默认使用小程序支付类型
+            
+            // 解析退款回调数据
+            WxPayRefundNotifyResult notifyResult = wxPayService.parseRefundNotifyResult(requestBody);
+            
+            // 检查退款结果
+            if (!"SUCCESS".equals(notifyResult.getReturnCode())) {
+                log.warn("微信退款回调失败，退款单号：{}，错误信息：{}", 
+                    notifyResult.getReqInfo().getOutRefundNo(), notifyResult.getReturnMsg());
+                return "<xml><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[OK]]></return_msg></xml>";
+            }
+            
+            // 获取退款信息
+            WxPayRefundNotifyResult.ReqInfo reqInfo = notifyResult.getReqInfo();
+            String outTradeNo = reqInfo.getOutTradeNo();
+            String outRefundNo = reqInfo.getOutRefundNo();
+            String refundStatus = reqInfo.getRefundStatus();
+            
+            try {
+                // 根据退款状态处理业务逻辑
+                if ("SUCCESS".equals(refundStatus)) {
+                    // 退款成功，可以在这里添加相关业务逻辑
+                    // 比如：更新订单状态、通知用户、记录退款日志等
+                    log.info("订单退款成功，订单号：{}，退款单号：{}，退款金额：{}", 
+                        outTradeNo, outRefundNo, reqInfo.getRefundFee());
+                    
+                    // 可以调用订单服务更新订单状态
+                    // wineOrderApi.updateOrderStatus(outTradeNo, "REFUNDED");
+                    
+                } else if ("CHANGE".equals(refundStatus)) {
+                    // 退款异常
+                    log.warn("订单退款异常，订单号：{}，退款单号：{}", outTradeNo, outRefundNo);
+                } else {
+                    log.warn("未知的退款状态：{}，订单号：{}，退款单号：{}", refundStatus, outTradeNo, outRefundNo);
+                }
+            } catch (Exception e) {
+                log.error("处理订单退款回调业务逻辑失败，订单号：{}，退款单号：{}，错误：{}", 
+                    outTradeNo, outRefundNo, e.getMessage(), e);
+                // 即使业务逻辑处理失败，也要返回成功给微信，避免重复回调
+            }
+            
+            log.info("处理微信退款回调成功，订单号：{}，退款单号：{}", outTradeNo, outRefundNo);
+            
+            // 返回成功响应给微信
+            return "<xml><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[OK]]></return_msg></xml>";
+        } catch (Exception e) {
+            log.error("处理微信退款回调失败：{}", e.getMessage(), e);
+            // 返回失败响应给微信，微信会重新回调
+            return "<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[" + e.getMessage() + "]]></return_msg></xml>";
         }
     }
 }

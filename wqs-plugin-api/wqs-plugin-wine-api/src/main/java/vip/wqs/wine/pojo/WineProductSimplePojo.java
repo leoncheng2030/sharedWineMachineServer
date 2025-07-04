@@ -52,6 +52,10 @@ public class WineProductSimplePojo implements Serializable {
     @Schema(description = "品牌")
     private String brand;
 
+    /** 供应商名称 */
+    @Schema(description = "供应商名称")
+    private String supplierName;
+
     /** 酒精度数 */
     @Schema(description = "酒精度数")
     private BigDecimal alcoholContent;

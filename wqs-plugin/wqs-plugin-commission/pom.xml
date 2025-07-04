@@ -32,6 +32,12 @@
             <artifactId>wqs-plugin-store-api</artifactId>
         </dependency>
 
+        <!-- 设备模块API（用于设备信息查询） -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-device-api</artifactId>
+        </dependency>
+
         <!-- 酒品模块API（用于酒品选择器） -->
         <dependency>
             <groupId>vip.wqs</groupId>

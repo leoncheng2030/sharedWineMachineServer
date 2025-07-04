@@ -25,12 +25,12 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import vip.wqs.common.annotation.CommonLog;
 import vip.wqs.common.pojo.CommonResult;
-import vip.wqs.payment.modular.wechat.param.WechatPayCreateParam;
-import vip.wqs.payment.modular.wechat.param.WechatPayQueryParam;
-import vip.wqs.payment.modular.wechat.param.WechatRefundParam;
-import vip.wqs.payment.modular.wechat.result.WechatPayCreateResult;
-import vip.wqs.payment.modular.wechat.result.WechatPayQueryResult;
-import vip.wqs.payment.modular.wechat.result.WechatRefundResult;
+import vip.wqs.payment.api.param.WechatPayCreateParam;
+import vip.wqs.payment.api.param.WechatPayQueryParam;
+import vip.wqs.payment.api.param.WechatRefundParam;
+import vip.wqs.payment.api.result.WechatPayCreateResult;
+import vip.wqs.payment.api.result.WechatPayQueryResult;
+import vip.wqs.payment.api.result.WechatRefundResult;
 import vip.wqs.payment.modular.wechat.service.WechatPayService;
 
 /**
@@ -143,18 +143,14 @@ public class WechatPayController {
             String nonce = request.getHeader("Wechatpay-Nonce");
             String serial = request.getHeader("Wechatpay-Serial");
             
-            // 验证回调签名
-            String callbackData = wechatPayService.verifyNotify(requestBody, signature, timestamp, nonce);
+            // 调用统一的支付回调处理方法
+            String response = wechatPayService.handlePayNotify(requestBody, signature, timestamp, nonce);
             
-            // 这里应该根据回调数据更新订单状态
-            // TODO: 集成订单服务，更新支付状态
-            log.info("微信支付回调处理成功，回调数据：{}", callbackData);
-            
-            // 返回成功响应给微信
-            return "{\"code\":\"SUCCESS\",\"message\":\"成功\"}";
+            log.info("微信支付回调处理完成");
+            return response;
         } catch (Exception e) {
             log.error("处理微信支付回调失败：{}", e.getMessage(), e);
-            return "{\"code\":\"FAIL\",\"message\":\"失败\"}";
+            return "<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[" + e.getMessage() + "]]></return_msg></xml>";
         }
     }
 
@@ -177,18 +173,14 @@ public class WechatPayController {
             String nonce = request.getHeader("Wechatpay-Nonce");
             String serial = request.getHeader("Wechatpay-Serial");
             
-            // 验证回调签名
-            String callbackData = wechatPayService.verifyRefundNotify(requestBody, signature, timestamp, nonce);
+            // 调用统一的退款回调处理方法
+            String response = wechatPayService.handleRefundNotify(requestBody, signature, timestamp, nonce);
             
-            // 这里应该根据回调数据更新订单退款状态
-            // TODO: 集成订单服务，更新退款状态
-            log.info("微信退款回调处理成功，回调数据：{}", callbackData);
-            
-            // 返回成功响应给微信
-            return "{\"code\":\"SUCCESS\",\"message\":\"成功\"}";
+            log.info("微信退款回调处理完成");
+            return response;
         } catch (Exception e) {
             log.error("处理微信退款回调失败：{}", e.getMessage(), e);
-            return "{\"code\":\"FAIL\",\"message\":\"失败\"}";
+            return "<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[" + e.getMessage() + "]]></return_msg></xml>";
         }
     }
 } 

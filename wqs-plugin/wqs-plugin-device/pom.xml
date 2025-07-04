@@ -43,6 +43,12 @@
             <groupId>vip.wqs</groupId>
             <artifactId>wqs-plugin-client-api</artifactId>
         </dependency>
+
+        <!-- 引入订单接口，用于设备控制时创建订单 -->
+        <dependency>
+            <groupId>vip.wqs</groupId>
+            <artifactId>wqs-plugin-order-api</artifactId>
+        </dependency>
     </dependencies>
 
 </project> 

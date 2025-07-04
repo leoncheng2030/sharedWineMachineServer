@@ -9,7 +9,7 @@
  * 4.分发源码时候，请注明软件出处 https://www.wqs.vip
  * 5.若您的项目无法满足以上几点，需要更多功能代码，获取WQS商业授权许可，请联系团队获取授权。
  */
-package vip.wqs.miniprogram.modular.device.controller;
+package vip.wqs.miniprogram.modular;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -30,6 +30,8 @@ import vip.wqs.device.api.DeviceApi;
 import vip.wqs.device.api.WineDeviceStockApi;
 import vip.wqs.device.dto.MiniDeviceConnectionStatusDto;
 import vip.wqs.device.dto.MiniDeviceControlDto;
+import vip.wqs.device.dto.MiniDeviceEncryptControlDto;
+import vip.wqs.device.dto.MiniDeviceControlResultDto;
 import vip.wqs.device.dto.MiniDevicePageDto;
 import vip.wqs.device.dto.MiniDeviceStatusDto;
 import vip.wqs.device.pojo.DevicePojo;
@@ -41,6 +43,7 @@ import vip.wqs.wine.api.WinePriceApi;
 import vip.wqs.wine.api.WineProductApi;
 import vip.wqs.wine.pojo.WinePricePojo;
 import vip.wqs.wine.pojo.WineProductPojo;
+
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -72,6 +75,8 @@ public class MiniDeviceController {
 
     @Resource
     private WineDeviceStockApi wineDeviceStockApi;
+
+
 
     /**
      * 获取设备分页列表
@@ -229,7 +234,7 @@ public class MiniDeviceController {
             wineInfo.put("type", wineProductDetail.getProductType()!= null ? wineProductDetail.getProductType() : "白酒");
             wineInfo.put("alcoholContent", wineProductDetail.getAlcoholContent()!= null ? wineProductDetail.getAlcoholContent() : 12);
             wineInfo.put("image", wineProductDetail.getImageUrl()!= null ? wineProductDetail.getImageUrl() : "/static/images/wine.png");
-            wineInfo.put("price", wineProductDetail.getSuggestedPrice()!=null ? wineProductDetail.getSuggestedPrice() : 0); // 每ml价格
+            wineInfo.put("unitPrice", wineProductDetail.getSuggestedPrice()!=null ? wineProductDetail.getUnitPrice() : 0); // 每ml价格
             // 集成真实库存查询
             try {
                 BigDecimal stockQuantity = wineDeviceStockApi.getStockQuantity(deviceDetail.getId(), deviceDetail.getCurrentProductId());
@@ -636,5 +641,136 @@ public class MiniDeviceController {
         queryPojo.setSortOrder(param.getSortOrder());
         
         return queryPojo;
+    }
+
+    // ==================== 蓝牙设备控制相关接口 ====================
+
+    /**
+     * 获取设备控制加密指令
+     * 小程序端调用此接口获取加密控制指令，然后通过蓝牙发送给设备
+     *
+     * @author AI Assistant
+     * @date 2025/01/30
+     */
+    @ApiOperationSupport(order = 12)
+    @Operation(summary = "获取设备控制加密指令")
+    @CommonLog("小程序获取设备控制指令")
+    @SaClientCheckLogin
+    @PostMapping("/miniprogram/device/control/getCommand")
+    public CommonResult<Object> getDeviceControlCommand(@RequestBody @Valid MiniDeviceEncryptControlDto param) {
+        try {
+            log.info("小程序获取设备控制指令，参数：{}", param);
+            
+            // 1. 设置当前用户ID
+            String currentUserId = StpClientUtil.getLoginId().toString();
+            param.setUserId(currentUserId);
+            
+            // 2. 调用设备API获取控制指令
+            String command = deviceApi.getDeviceControlCommand(
+                param.getDeviceId(), 
+                param.getChargeId(), 
+                param.getMinute(), 
+                param.getSecond()
+            );
+            
+            if (StrUtil.isBlank(command)) {
+                return CommonResult.error("获取控制指令失败");
+            }
+            
+            // 3. 构建返回结果
+            java.util.Map<String, Object> result = new java.util.HashMap<>();
+            result.put("success", true);
+            result.put("cmd", command);
+            result.put("message", "获取控制指令成功");
+            result.put("deviceId", param.getDeviceId());
+            result.put("orderId", param.getChargeId());
+            
+            log.info("小程序获取设备控制指令成功，用户ID：{}，设备ID：{}", currentUserId, param.getDeviceId());
+            return CommonResult.data(result);
+            
+        } catch (Exception e) {
+            log.error("获取设备控制指令异常", e);
+            return CommonResult.error("获取设备控制指令失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 验证设备控制权限
+     * 检查订单和设备是否可以进行控制操作
+     *
+     * @author AI Assistant
+     * @date 2025/01/30
+     */
+    @ApiOperationSupport(order = 13)
+    @Operation(summary = "验证设备控制权限")
+    @CommonLog("小程序验证设备控制权限")
+    @SaClientCheckLogin
+    @GetMapping("/miniprogram/device/control/validatePermission")
+    public CommonResult<Boolean> validateDeviceControlPermission(@RequestParam String orderId, @RequestParam String deviceId) {
+        try {
+            log.info("小程序验证设备控制权限，订单ID：{}，设备ID：{}", orderId, deviceId);
+            
+            // 1. 验证参数
+            if (StrUtil.isBlank(orderId) || StrUtil.isBlank(deviceId)) {
+                return CommonResult.error("订单ID和设备ID不能为空");
+            }
+            
+            // 2. 获取当前用户ID
+            String currentUserId = StpClientUtil.getLoginId().toString();
+            
+            // 3. 调用设备API验证权限
+            Boolean hasPermission = deviceApi.validateDeviceControlPermission(orderId, deviceId, currentUserId);
+            
+            log.info("小程序验证设备控制权限完成，用户ID：{}，订单ID：{}，设备ID：{}，结果：{}", 
+                    currentUserId, orderId, deviceId, hasPermission);
+            return CommonResult.data(hasPermission != null ? hasPermission : false);
+            
+        } catch (Exception e) {
+            log.error("验证设备控制权限异常，订单ID：{}，设备ID：{}", orderId, deviceId, e);
+            return CommonResult.error("验证设备控制权限失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 更新设备控制执行结果
+     * 小程序端执行设备控制后，调用此接口更新执行状态
+     *
+     * @author AI Assistant
+     * @date 2025/01/30
+     */
+    @ApiOperationSupport(order = 14)
+    @Operation(summary = "更新设备控制执行结果")
+    @CommonLog("小程序更新设备控制结果")
+    @SaClientCheckLogin
+    @PostMapping("/miniprogram/device/control/updateResult")
+    public CommonResult<Void> updateDeviceControlResult(@RequestBody @Valid MiniDeviceControlResultDto param) {
+        try {
+            log.info("小程序更新设备控制结果，参数：{}", param);
+            
+            // 1. 设置当前用户ID
+            String currentUserId = StpClientUtil.getLoginId().toString();
+            param.setUserId(currentUserId);
+            
+            // 2. 调用设备API更新控制结果
+            Boolean updateSuccess = deviceApi.updateDeviceControlResult(
+                param.getOrderId(), 
+                param.getDeviceId(), 
+                param.getSuccess(), 
+                param.getMessage(), 
+                currentUserId
+            );
+            
+            if (updateSuccess == null || !updateSuccess) {
+                return CommonResult.error("更新控制结果失败");
+            }
+            
+            log.info("小程序更新设备控制结果成功，用户ID：{}，订单ID：{}，设备ID：{}，结果：{}", 
+                    currentUserId, param.getOrderId(), param.getDeviceId(), param.getSuccess());
+            return CommonResult.ok();
+            
+        } catch (Exception e) {
+            log.error("更新设备控制结果异常", e);
+            return CommonResult.error("更新设备控制结果失败：" + e.getMessage());
+        }
     }
 } 

@@ -17,7 +17,7 @@ INSERT INTO `sys_resource` VALUES ('1880000000000000005', '1880000000000000003',
 INSERT INTO `sys_resource` VALUES ('1880000000000000006', '1880000000000000003', '支付记录导出', NULL, 'paymentRecordExport', 'BUTTON', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 3, NULL, 'NOT_DELETE', NULL, NULL, NULL, NULL);
 
 -- 支付配置管理
-INSERT INTO `sys_resource` VALUES ('1880000000000000007', '1880000000000000002', '支付配置', 'paymentConfig', 'paymentConfigIndex', 'MENU', '1880000000000000001', 'MENU', '/payment/record', 'payment/record/index', 'setting-outlined', NULL, NULL, NULL, NULL, 63, NULL, 'NOT_DELETE', NULL, NULL, NULL, NULL);
+INSERT INTO `sys_resource` VALUES ('1880000000000000007', '1880000000000000002', '支付配置', 'paymentConfig', 'paymentConfigIndex', 'MENU', '1880000000000000001', 'MENU', '/payment/config', 'payment/config/index', 'setting-outlined', NULL, NULL, NULL, NULL, 63, NULL, 'NOT_DELETE', NULL, NULL, NULL, NULL);
 
 -- 支付配置按钮权限
 INSERT INTO `sys_resource` VALUES ('1880000000000000008', '1880000000000000007', '支付配置分页', NULL, 'paymentConfigPage', 'BUTTON', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, 'NOT_DELETE', NULL, NULL, NULL, NULL);
@@ -37,6 +37,35 @@ INSERT INTO `sys_relation` VALUES ('1880000000000000201', '1570687866138206208',
 
 -- 支付配置管理权限
 INSERT INTO `sys_relation` VALUES ('1880000000000000202', '1570687866138206208', '1880000000000000007', 'SYS_ROLE_HAS_RESOURCE', '{"menuId":"1880000000000000007","buttonInfo":["1880000000000000008","1880000000000000009","1880000000000000010","1880000000000000011","1880000000000000012","1880000000000000013","1880000000000000014","1880000000000000015","1880000000000000016"]}');
+
+-- =====================================================
+-- API权限配置 - 支付记录管理
+-- =====================================================
+INSERT INTO `sys_relation` VALUES ('1880000000000000300', '1570687866138206208', '/payment/record/page', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/payment/record/page","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}');
+INSERT INTO `sys_relation` VALUES ('1880000000000000301', '1570687866138206208', '/payment/record/detail', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/payment/record/detail","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}');
+
+-- =====================================================
+-- API权限配置 - 支付配置管理
+-- =====================================================
+INSERT INTO `sys_relation` VALUES ('1880000000000000310', '1570687866138206208', '/payment/record/page', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/payment/record/page","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}');
+INSERT INTO `sys_relation` VALUES ('1880000000000000311', '1570687866138206208', '/payment/record/add', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/payment/record/add","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}');
+INSERT INTO `sys_relation` VALUES ('1880000000000000312', '1570687866138206208', '/payment/record/edit', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/payment/record/edit","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}');
+INSERT INTO `sys_relation` VALUES ('1880000000000000313', '1570687866138206208', '/payment/record/delete', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/payment/record/delete","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}');
+INSERT INTO `sys_relation` VALUES ('1880000000000000314', '1570687866138206208', '/payment/record/detail', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/payment/record/detail","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}');
+INSERT INTO `sys_relation` VALUES ('1880000000000000315', '1570687866138206208', '/payment/record/disable', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/payment/record/disable","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}');
+INSERT INTO `sys_relation` VALUES ('1880000000000000316', '1570687866138206208', '/payment/record/enable', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/payment/record/enable","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}');
+INSERT INTO `sys_relation` VALUES ('1880000000000000317', '1570687866138206208', '/payment/record/batchDelete', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/payment/record/batchDelete","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}');
+INSERT INTO `sys_relation` VALUES ('1880000000000000318', '1570687866138206208', '/payment/record/selector', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/payment/record/selector","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}');
+INSERT INTO `sys_relation` VALUES ('1880000000000000319', '1570687866138206208', '/payment/record/enabled', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/payment/record/enabled","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}');
+
+-- =====================================================
+-- API权限配置 - 微信支付管理
+-- =====================================================
+INSERT INTO `sys_relation` VALUES ('1880000000000000320', '1570687866138206208', '/payment/wechat/create', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/payment/wechat/create","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}');
+INSERT INTO `sys_relation` VALUES ('1880000000000000321', '1570687866138206208', '/payment/wechat/query', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/payment/wechat/query","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}');
+INSERT INTO `sys_relation` VALUES ('1880000000000000322', '1570687866138206208', '/payment/wechat/refund', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/payment/wechat/refund","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}');
+INSERT INTO `sys_relation` VALUES ('1880000000000000323', '1570687866138206208', '/payment/wechat/refund/query', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/payment/wechat/refund/query","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}');
+INSERT INTO `sys_relation` VALUES ('1880000000000000324', '1570687866138206208', '/payment/wechat/close', 'SYS_ROLE_HAS_PERMISSION', '{"apiUrl":"/payment/wechat/close","scopeCategory":"SCOPE_ALL","scopeDefineOrgIdList":[]}');
 
 -- 支付方式字典数据
 INSERT INTO `dev_dict` VALUES ('1880000000000000501', '0', '支付方式', 'PAY_TYPE', 'payment_type_dict', 'BIZ', 100, NULL, 'NOT_DELETE', NULL, NULL, NULL, NULL);

@@ -251,6 +251,7 @@
 		// 基本信息验证
 		storeCode: [{ required: true, message: '请输入门店编码', trigger: 'blur' }],
 		storeName: [{ required: true, message: '请输入门店名称', trigger: 'blur' }],
+		storeManagerId: [{ required: true, message: '请选择门店管理员', trigger: 'change' }],
 		status: [{ required: true, message: '请选择门店状态', trigger: 'change' }],
 		sortCode: [{ required: true, message: '请输入排序码', trigger: 'blur' }],
 
@@ -262,7 +263,6 @@
 		contactEmail: [{ type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }],
 
 		// 管理配置验证
-		storeManagerId: [{ required: true, message: '请选择门店管理员', trigger: 'change' }],
 		priceAuthority: [{ required: true, message: '请选择定价权限', trigger: 'change' }]
 	}
 

@@ -58,6 +58,10 @@ public class WineProductPageParam {
     @Schema(description = "酒品状态")
     private String status;
 
+    /** 供应商客户端ID */
+    @Schema(description = "供应商客户端ID")
+    private String supplierId;
+
     /** 创建时间开始 */
     @Schema(description = "创建时间开始")
     private String startCreateTime;

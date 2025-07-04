@@ -52,7 +52,6 @@ public class MiniOrderCreateParam {
     /** 单价(元/ml) */
     @Schema(description = "单价(元/ml)", requiredMode = Schema.RequiredMode.REQUIRED, example = "0.05")
     @NotNull(message = "单价不能为空")
-    @DecimalMin(value = "0.01", message = "单价不能小于0.01元")
     private BigDecimal unitPrice;
 
     /** 备注 */

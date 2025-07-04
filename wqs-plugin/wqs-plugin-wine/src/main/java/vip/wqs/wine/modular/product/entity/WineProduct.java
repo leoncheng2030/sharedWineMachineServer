@@ -82,6 +82,15 @@ public class WineProduct extends CommonEntity {
     @Schema(description = "生产厂家")
     private String manufacturer;
 
+    /** 供应商客户端ID */
+    @Schema(description = "供应商客户端ID")
+    @Trans(type = TransType.RPC, targetClassName = "vip.wqs.client.modular.user.entity.ClientUser", fields = "name", alias = "supplierClient", ref = "supplierName")
+    private String supplierId;
+
+    /** 供应商名称（翻译字段） */
+    @TableField(exist = false)
+    private String supplierName;
+
     /** 建议零售价 */
     @Schema(description = "建议零售价")
     private BigDecimal suggestedPrice;

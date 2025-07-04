@@ -9,7 +9,7 @@
  * 4.分发源码时候，请注明软件出处 https://www.wqs.vip
  * 5.若您的项目无法满足以上几点，需要更多功能代码，获取WQS商业授权许可，请联系团队获取授权。
  */
-package vip.wqs.miniprogram.modular.commission.controller;
+package vip.wqs.miniprogram.modular;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;

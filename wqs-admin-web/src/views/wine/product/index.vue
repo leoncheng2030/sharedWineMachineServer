@@ -197,6 +197,12 @@
 			width: '90px'
 		},
 		{
+			title: '供应商',
+			dataIndex: 'supplierName',
+			ellipsis: true,
+			width: '100px'
+		},
+		{
 			title: '容量(ml)',
 			dataIndex: 'volume',
 			align: 'center',

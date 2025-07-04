@@ -43,12 +43,12 @@ public class WineStockLog {
 
     /** 设备ID */
     @Schema(description = "设备ID")
-    @Trans(type = TransType.RPC, targetClassName = "vip.wqs.device.modular.info.entity.WineDevice", fields = "deviceName,deviceCode", alias = "device", ref = "deviceName,deviceCode")
+    @Trans(type = TransType.RPC, targetClassName = "vip.wqs.device.modular.info.entity.WineDevice", fields = {"deviceName", "deviceCode"}, alias = "device", refs = {"deviceName", "deviceCode"})
     private String deviceId;
 
     /** 酒品ID */
     @Schema(description = "酒品ID")
-    @Trans(type = TransType.RPC, targetClassName = "vip.wqs.wine.modular.product.entity.WineProduct", fields = "productName,productCode", alias = "product", ref = "productName,productCode")
+    @Trans(type = TransType.RPC, targetClassName = "vip.wqs.wine.modular.product.entity.WineProduct", fields = {"productName", "productCode"}, alias = "product", refs = {"productName", "productCode"})
     private String productId;
 
     /** 变更类型：REFILL-补货，SALE-销售，ADJUST-调整 */

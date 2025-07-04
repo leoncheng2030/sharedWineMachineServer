@@ -8,14 +8,25 @@
 		@cancel="handleCancel"
 		:destroyOnClose="true"
 	>
-		<a-form ref="formRef" :model="formData" :rules="rules" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-			<a-form-item label="酒品" name="productId">
-				<a-select v-model:value="formData.productId" placeholder="请选择酒品" show-search :filter-option="filterOption">
-					<a-select-option v-for="item in productData" :key="item.id" :value="item.id">
-						{{ item.productName }}
-					</a-select-option>
-				</a-select>
-			</a-form-item>
+		<a-spin :spinning="loading">
+			<a-form ref="formRef" :model="formData" :rules="rules" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+				<a-form-item label="酒品" name="productId">
+					<a-select 
+						v-model:value="formData.productId" 
+						placeholder="请选择酒品" 
+						show-search 
+						:filter-option="filterOption"
+						:disabled="!!deviceCurrentProduct || loading"
+						:loading="loading"
+					>
+						<a-select-option v-for="item in productData" :key="item.id" :value="item.id">
+							{{ item.productName }}
+						</a-select-option>
+					</a-select>
+					<div v-if="deviceCurrentProduct" style="margin-top: 8px; color: #666; font-size: 12px;">
+						当前设备绑定酒品：{{ deviceCurrentProduct.productName }}
+					</div>
+				</a-form-item>
 			<a-form-item label="初始库存" name="initialQuantity">
 				<a-input-number
 					v-model:value="formData.initialQuantity"
@@ -36,10 +47,11 @@
 					addon-after="ml"
 				/>
 			</a-form-item>
-			<a-form-item label="备注" name="remark">
-				<a-textarea v-model:value="formData.remark" placeholder="请输入备注" :rows="3" />
-			</a-form-item>
-		</a-form>
+				<a-form-item label="备注" name="remark">
+					<a-textarea v-model:value="formData.remark" placeholder="请输入备注" :rows="3" />
+				</a-form-item>
+			</a-form>
+		</a-spin>
 	</a-modal>
 </template>
 
@@ -47,6 +59,7 @@
 	import { message } from 'ant-design-vue'
 	import wineDeviceStockApi from '@/api/wine/wineDeviceStockApi'
 	import wineProductApi from '@/api/wine/wineProductApi'
+	import wineDeviceApi from '@/api/wine/wineDeviceApi'
 
 	const props = defineProps({
 		deviceId: {
@@ -59,9 +72,11 @@
 
 	const visible = ref(false)
 	const confirmLoading = ref(false)
+	const loading = ref(false) // 弹窗数据加载状态
 	const title = ref('初始化库存')
 	const formRef = ref()
 	const productData = ref([])
+	const deviceCurrentProduct = ref(null) // 设备当前绑定的酒品
 
 	const formData = ref({
 		deviceId: props.deviceId,
@@ -78,10 +93,17 @@
 	}
 
 	// 打开弹窗
-	const onOpen = () => {
+	const onOpen = async () => {
 		visible.value = true
-		loadProductData()
-		resetForm()
+		loading.value = true
+		
+		try {
+			await loadDeviceInfo()
+			await loadProductData()
+			resetForm()
+		} finally {
+			loading.value = false
+		}
 	}
 
 	// 关闭弹窗
@@ -111,12 +133,30 @@
 	const resetForm = () => {
 		formData.value = {
 			deviceId: props.deviceId,
-			productId: undefined,
+			productId: deviceCurrentProduct.value?.id || undefined,
 			initialQuantity: undefined,
 			alertThreshold: undefined,
 			remark: ''
 		}
 		formRef.value?.resetFields()
+	}
+
+	// 加载设备信息
+	const loadDeviceInfo = async () => {
+		try {
+			const deviceInfo = await wineDeviceApi.detail({ id: props.deviceId })
+			if (deviceInfo.currentProductId && deviceInfo.currentProductName) {
+				deviceCurrentProduct.value = {
+					id: deviceInfo.currentProductId,
+					productName: deviceInfo.currentProductName
+				}
+			} else {
+				deviceCurrentProduct.value = null
+			}
+		} catch (error) {
+			console.error('加载设备信息失败:', error)
+			deviceCurrentProduct.value = null
+		}
 	}
 
 	// 加载酒品数据

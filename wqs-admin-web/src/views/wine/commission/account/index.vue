@@ -1,13 +1,56 @@
 <template>
 	<a-card :bordered="false">
+		<!-- 统计卡片 -->
+		<a-row :gutter="16" style="margin-bottom: 16px;">
+			<a-col :span="6">
+				<a-card size="small">
+					<a-statistic
+						title="总账户数"
+						:value="statisticsData.totalAccounts"
+						:value-style="{ color: '#1890ff' }"
+					/>
+				</a-card>
+			</a-col>
+			<a-col :span="6">
+				<a-card size="small">
+					<a-statistic
+						title="总余额"
+						:value="formatMoney(statisticsData.totalBalance)"
+						suffix="元"
+						:value-style="{ color: '#52c41a' }"
+					/>
+				</a-card>
+			</a-col>
+			<a-col :span="6">
+				<a-card size="small">
+					<a-statistic
+						title="累计佣金"
+						:value="formatMoney(statisticsData.totalCommission)"
+						suffix="元"
+						:value-style="{ color: '#722ed1' }"
+					/>
+				</a-card>
+			</a-col>
+			<a-col :span="6">
+				<a-card size="small">
+					<a-statistic
+						title="累计提现"
+						:value="formatMoney(statisticsData.totalWithdraw)"
+						suffix="元"
+						:value-style="{ color: '#eb2f96' }"
+					/>
+				</a-card>
+			</a-col>
+		</a-row>
+
 		<a-form ref="searchFormRef" name="searchForm" :model="searchFormState" class="wqs-search-form">
 			<a-row :gutter="16">
-				<a-col :lg="5" :md="8" :sm="24">
+				<a-col :lg="4" :md="8" :sm="24">
 					<a-form-item label="关键词" name="searchKey">
 						<a-input v-model:value="searchFormState.searchKey" placeholder="请输入用户昵称/手机号" allow-clear />
 					</a-form-item>
 				</a-col>
-				<a-col :lg="5" :md="8" :sm="24">
+				<a-col :lg="4" :md="8" :sm="24">
 					<a-form-item label="账户状态" name="status">
 						<a-select v-model:value="searchFormState.status" placeholder="请选择账户状态" allow-clear>
 							<a-select-option value="NORMAL">正常</a-select-option>
@@ -16,7 +59,17 @@
 						</a-select>
 					</a-form-item>
 				</a-col>
-				<a-col :lg="7" :md="8" :sm="24">
+				<a-col :lg="4" :md="8" :sm="24">
+					<a-form-item label="余额范围" name="balanceRange">
+						<a-select v-model:value="searchFormState.balanceRange" placeholder="请选择余额范围" allow-clear>
+							<a-select-option value="0-100">0-100元</a-select-option>
+							<a-select-option value="100-500">100-500元</a-select-option>
+							<a-select-option value="500-1000">500-1000元</a-select-option>
+							<a-select-option value="1000+">1000元以上</a-select-option>
+						</a-select>
+					</a-form-item>
+				</a-col>
+				<a-col :lg="5" :md="8" :sm="24">
 					<a-form-item label="创建时间" name="createTimeRange">
 						<a-range-picker
 							v-model:value="searchFormState.createTimeRange"
@@ -62,36 +115,82 @@
 			</template>
 
 			<template #bodyCell="{ column, record }">
-				<template v-if="column.dataIndex === 'userNickname'">
-					<a-tag color="blue">{{ record.userNickname || '未知用户' }}</a-tag>
+				<!-- 用户信息 -->
+				<template v-if="column.dataIndex === 'userInfo'">
+					<div class="user-info">
+						<div class="user-avatar">
+							<a-avatar :size="40" style="background-color: #1890ff;">
+								{{ (record.userNickname || '未知')[0] }}
+							</a-avatar>
+						</div>
+						<div class="user-details">
+							<div class="user-name">
+								<a-tag color="blue">{{ record.userNickname || '未知用户' }}</a-tag>
+							</div>
+							<div class="user-id">
+								<span class="user-id-text">ID: {{ record.userId || '-' }}</span>
+							</div>
+						</div>
+					</div>
 				</template>
 
-				<template v-else-if="column.dataIndex === 'totalBalance'">
-					<span class="balance-amount">¥{{ formatMoney(record.totalBalance) }}</span>
+				<!-- 账户余额 -->
+				<template v-else-if="column.dataIndex === 'balanceInfo'">
+					<div class="balance-info">
+						<div class="balance-item">
+							<span class="balance-label">总余额:</span>
+							<span class="balance-amount">¥{{ formatMoney(record.totalBalance) }}</span>
+						</div>
+						<div class="balance-progress">
+							<a-progress 
+								:percent="getBalancePercent(record)" 
+								:stroke-color="{
+									'0%': '#108ee9',
+									'100%': '#87d068',
+								}"
+								size="small"
+								:show-info="false"
+							/>
+						</div>
+						<div class="balance-breakdown">
+							<span class="available">可用: ¥{{ formatMoney(record.availableBalance) }}</span>
+							<span class="frozen" v-if="record.frozenBalance > 0">冻结: ¥{{ formatMoney(record.frozenBalance) }}</span>
+						</div>
+					</div>
 				</template>
 
-				<template v-else-if="column.dataIndex === 'availableBalance'">
-					<span class="available-balance">¥{{ formatMoney(record.availableBalance) }}</span>
+				<!-- 佣金信息 -->
+				<template v-else-if="column.dataIndex === 'commissionInfo'">
+					<div class="commission-info">
+						<div class="commission-item">
+							<span class="commission-label">累计佣金:</span>
+							<span class="commission-amount">¥{{ formatMoney(record.totalCommission) }}</span>
+						</div>
+						<div class="commission-item">
+							<span class="withdraw-label">累计提现:</span>
+							<span class="withdraw-amount">¥{{ formatMoney(record.totalWithdraw) }}</span>
+						</div>
+						<div class="commission-ratio" v-if="record.totalCommission > 0">
+							<a-tag color="purple">
+								提现率: {{ getWithdrawRatio(record) }}%
+							</a-tag>
+						</div>
+					</div>
 				</template>
 
-				<template v-else-if="column.dataIndex === 'frozenBalance'">
-					<span class="frozen-balance">¥{{ formatMoney(record.frozenBalance) }}</span>
-				</template>
-
-				<template v-else-if="column.dataIndex === 'totalCommission'">
-					<span class="commission-amount">¥{{ formatMoney(record.totalCommission) }}</span>
-				</template>
-
-				<template v-else-if="column.dataIndex === 'totalWithdraw'">
-					<span class="withdraw-amount">¥{{ formatMoney(record.totalWithdraw) }}</span>
-				</template>
-
+				<!-- 账户状态 -->
 				<template v-else-if="column.dataIndex === 'status'">
-					<a-tag :color="getStatusColor(record.status)">
-						{{ getStatusText(record.status) }}
-					</a-tag>
+					<div class="status-info">
+						<a-tag :color="getStatusColor(record.status)" style="margin-bottom: 4px;">
+							{{ getStatusText(record.status) }}
+						</a-tag>
+						<div class="status-time" v-if="record.lastCommissionTime">
+							<small>最近佣金: {{ formatDate(record.lastCommissionTime) }}</small>
+						</div>
+					</div>
 				</template>
 
+				<!-- 操作列 -->
 				<template v-else-if="column.dataIndex === 'action'">
 					<a-space>
 						<a @click="detail(record)">详情</a>
@@ -121,8 +220,16 @@
 		<!-- 账户详情抽屉 -->
 		<a-drawer v-model:open="detailVisible" title="账户详情" :width="600" :body-style="{ paddingBottom: '80px' }">
 			<a-descriptions v-if="detailData" :column="2" bordered>
-				<a-descriptions-item label="用户昵称" :span="2">
-					<a-tag color="blue">{{ detailData.userNickname || '未知用户' }}</a-tag>
+				<a-descriptions-item label="用户信息" :span="2">
+					<div class="user-info-detail">
+						<a-avatar :size="40" style="background-color: #1890ff; margin-right: 12px;">
+							{{ (detailData.userNickname || '未知')[0] }}
+						</a-avatar>
+						<div>
+							<div><a-tag color="blue">{{ detailData.userNickname || '未知用户' }}</a-tag></div>
+							<div style="color: #666; font-size: 12px;">ID: {{ detailData.userId }}</div>
+						</div>
+					</div>
 				</a-descriptions-item>
 				<a-descriptions-item label="总余额">
 					<span class="balance-amount">¥{{ formatMoney(detailData.totalBalance) }}</span>
@@ -138,6 +245,9 @@
 				</a-descriptions-item>
 				<a-descriptions-item label="累计提现">
 					<span class="withdraw-amount">¥{{ formatMoney(detailData.totalWithdraw) }}</span>
+				</a-descriptions-item>
+				<a-descriptions-item label="提现率">
+					<a-tag color="purple">{{ getWithdrawRatio(detailData) }}%</a-tag>
 				</a-descriptions-item>
 				<a-descriptions-item label="账户状态">
 					<a-tag :color="getStatusColor(detailData.status)">
@@ -171,8 +281,13 @@
 			@cancel="handleAdjustCancel"
 		>
 			<a-form ref="adjustFormRef" :model="adjustFormState" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-				<a-form-item label="用户昵称">
-					<a-tag color="blue">{{ adjustFormState.userNickname }}</a-tag>
+				<a-form-item label="用户信息">
+					<div class="user-info">
+						<a-avatar :size="32" style="background-color: #1890ff; margin-right: 8px;">
+							{{ (adjustFormState.userNickname || '未知')[0] }}
+						</a-avatar>
+						<a-tag color="blue">{{ adjustFormState.userNickname }}</a-tag>
+					</div>
 				</a-form-item>
 				<a-form-item label="调整类型" name="adjustType" :rules="[{ required: true, message: '请选择调整类型' }]">
 					<a-select v-model:value="adjustFormState.adjustType" placeholder="请选择调整类型">
@@ -222,7 +337,16 @@
 	const searchFormState = reactive({
 		searchKey: '',
 		status: undefined,
+		balanceRange: undefined,
 		createTimeRange: undefined
+	})
+
+	// 统计数据
+	const statisticsData = reactive({
+		totalAccounts: 0,
+		totalBalance: 0,
+		totalCommission: 0,
+		totalWithdraw: 0
 	})
 
 	// 详情相关状态
@@ -243,50 +367,25 @@
 	// 表格配置
 	const columns = [
 		{
-			title: '用户昵称',
-			dataIndex: 'userNickname',
-			width: 120
+			title: '用户信息',
+			dataIndex: 'userInfo',
+			width: 180,
+			fixed: 'left'
 		},
 		{
-			title: '总余额',
-			dataIndex: 'totalBalance',
-			width: 120,
-			sorter: true
+			title: '账户余额',
+			dataIndex: 'balanceInfo',
+			width: 220
 		},
 		{
-			title: '可用余额',
-			dataIndex: 'availableBalance',
-			width: 120,
-			sorter: true
+			title: '佣金信息',
+			dataIndex: 'commissionInfo',
+			width: 200
 		},
 		{
-			title: '冻结余额',
-			dataIndex: 'frozenBalance',
-			width: 120,
-			sorter: true
-		},
-		{
-			title: '累计佣金',
-			dataIndex: 'totalCommission',
-			width: 120,
-			sorter: true
-		},
-		{
-			title: '累计提现',
-			dataIndex: 'totalWithdraw',
-			width: 120,
-			sorter: true
-		},
-		{
-			title: '账户状态',
+			title: '状态信息',
 			dataIndex: 'status',
-			width: 100
-		},
-		{
-			title: '最后佣金时间',
-			dataIndex: 'lastCommissionTime',
-			width: 150,
-			sorter: true
+			width: 120
 		},
 		{
 			title: '创建时间',
@@ -335,9 +434,49 @@
 		}
 		delete searchParam.createTimeRange
 
+		// 处理余额范围
+		if (searchParam.balanceRange) {
+			const ranges = {
+				'0-100': { min: 0, max: 100 },
+				'100-500': { min: 100, max: 500 },
+				'500-1000': { min: 500, max: 1000 },
+				'1000+': { min: 1000, max: null }
+			}
+			const range = ranges[searchParam.balanceRange]
+			if (range) {
+				searchParam.balanceMin = range.min
+				searchParam.balanceMax = range.max
+			}
+		}
+		delete searchParam.balanceRange
+
 		return wineUserAccountApi.wineUserAccountPage(Object.assign(parameter, searchParam)).then((data) => {
+			// 计算统计数据
+			updateStatistics(data.records || [])
 			return data
 		})
+	}
+
+	// 更新统计数据
+	const updateStatistics = (records) => {
+		statisticsData.totalAccounts = records.length
+		statisticsData.totalBalance = records.reduce((sum, item) => sum + (item.totalBalance || 0), 0)
+		statisticsData.totalCommission = records.reduce((sum, item) => sum + (item.totalCommission || 0), 0)
+		statisticsData.totalWithdraw = records.reduce((sum, item) => sum + (item.totalWithdraw || 0), 0)
+	}
+
+	// 计算余额百分比
+	const getBalancePercent = (record) => {
+		if (!record.totalBalance || record.totalBalance <= 0) return 0
+		const maxBalance = Math.max(...(table.value?.localDataSource || []).map(item => item.totalBalance || 0))
+		if (maxBalance <= 0) return 0
+		return Math.round((record.totalBalance / maxBalance) * 100)
+	}
+
+	// 计算提现率
+	const getWithdrawRatio = (record) => {
+		if (!record.totalCommission || record.totalCommission <= 0) return 0
+		return Math.round((record.totalWithdraw / record.totalCommission) * 100)
 	}
 
 	// 重置搜索
@@ -425,6 +564,22 @@
 		}
 		delete searchParam.createTimeRange
 
+		// 处理余额范围
+		if (searchParam.balanceRange) {
+			const ranges = {
+				'0-100': { min: 0, max: 100 },
+				'100-500': { min: 100, max: 500 },
+				'500-1000': { min: 500, max: 1000 },
+				'1000+': { min: 1000, max: null }
+			}
+			const range = ranges[searchParam.balanceRange]
+			if (range) {
+				searchParam.balanceMin = range.min
+				searchParam.balanceMax = range.max
+			}
+		}
+		delete searchParam.balanceRange
+
 		wineUserAccountApi.wineUserAccountExport(searchParam).then(() => {
 			message.success('导出成功')
 		})
@@ -434,6 +589,12 @@
 	const formatMoney = (amount) => {
 		if (amount === null || amount === undefined) return '0.00'
 		return Number(amount).toFixed(2)
+	}
+
+	// 格式化日期
+	const formatDate = (dateTime) => {
+		if (!dateTime) return '-'
+		return new Date(dateTime).toLocaleDateString('zh-CN')
 	}
 
 	// 格式化日期时间
@@ -504,5 +665,103 @@
 
 	.wqs-table-actions {
 		margin-bottom: 16px;
+	}
+
+	// 用户信息样式
+	.user-info {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+
+		.user-details {
+			flex: 1;
+			min-width: 0;
+
+			.user-name {
+				margin-bottom: 4px;
+			}
+
+			.user-id-text {
+				color: #666;
+				font-size: 12px;
+			}
+		}
+	}
+
+	.user-info-detail {
+		display: flex;
+		align-items: center;
+	}
+
+	// 余额信息样式
+	.balance-info {
+		.balance-item {
+			margin-bottom: 4px;
+
+			.balance-label {
+				color: #666;
+				font-size: 12px;
+				margin-right: 4px;
+			}
+
+			.balance-amount {
+				color: #1890ff;
+				font-weight: 500;
+			}
+		}
+
+		.balance-progress {
+			margin: 4px 0;
+		}
+
+		.balance-breakdown {
+			display: flex;
+			gap: 8px;
+			font-size: 12px;
+
+			.available {
+				color: #52c41a;
+			}
+
+			.frozen {
+				color: #fa8c16;
+			}
+		}
+	}
+
+	// 佣金信息样式
+	.commission-info {
+		.commission-item {
+			margin-bottom: 4px;
+			font-size: 12px;
+
+			.commission-label,
+			.withdraw-label {
+				color: #666;
+				margin-right: 4px;
+			}
+
+			.commission-amount {
+				color: #722ed1;
+				font-weight: 500;
+			}
+
+			.withdraw-amount {
+				color: #eb2f96;
+				font-weight: 500;
+			}
+		}
+
+		.commission-ratio {
+			margin-top: 4px;
+		}
+	}
+
+	// 状态信息样式
+	.status-info {
+		.status-time {
+			margin-top: 4px;
+			color: #999;
+		}
 	}
 </style>
