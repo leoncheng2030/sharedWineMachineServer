@@ -22,6 +22,7 @@ import java.util.List;
 
 /**
  * 订单管理API接口
+ * 参考AuthServiceImpl的设计模式，返回动态填充的响应类
  *
  * @author wqs
  * @date 2025/01/30 16:20
@@ -32,7 +33,7 @@ public interface WineOrderApi {
      * 根据ID获取订单信息
      *
      * @param orderId 订单ID
-     * @return 订单信息
+     * @return 订单信息（包含动态填充的扩展信息）
      * @author wqs
      * @date 2025/01/30 16:20
      */
@@ -42,7 +43,7 @@ public interface WineOrderApi {
      * 根据订单号获取订单信息
      *
      * @param orderNo 订单号
-     * @return 订单信息
+     * @return 订单信息（包含动态填充的扩展信息）
      * @author wqs
      * @date 2025/01/30 16:20
      */
@@ -118,7 +119,7 @@ public interface WineOrderApi {
      * 根据用户ID获取订单列表
      *
      * @param userId 用户ID
-     * @return 订单列表
+     * @return 订单列表（包含动态填充的扩展信息）
      * @author wqs
      * @date 2025/01/30 16:20
      */
@@ -128,7 +129,7 @@ public interface WineOrderApi {
      * 根据设备ID获取订单列表
      *
      * @param deviceId 设备ID
-     * @return 订单列表
+     * @return 订单列表（包含动态填充的扩展信息）
      * @author wqs
      * @date 2025/01/30 16:20
      */
@@ -138,7 +139,7 @@ public interface WineOrderApi {
      * 分页获取订单列表
      *
      * @param param 分页查询参数
-     * @return 订单分页结果
+     * @return 订单分页结果（包含动态填充的扩展信息）
      * @author wqs
      * @date 2025/01/30 16:20
      */

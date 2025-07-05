@@ -42,9 +42,9 @@ public class MiniDeviceEncryptControlDto {
     /**
      * 设备ID
      */
-    @Schema(description = "设备ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotBlank(message = "设备ID不能为空")
-    private String deviceId;
+    @Schema(description = "设备Code", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotBlank(message = "设备Code不能为空")
+    private String deviceCode;
 
     /**
      * 用户ID（由系统自动设置，无需前端传递）

@@ -22,6 +22,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vip.wqs.commission.api.WineCommissionRecordApi;
+import vip.wqs.wine.api.WineProductApi;
+import vip.wqs.wine.pojo.WineProductPojo;
 import vip.wqs.order.modular.record.entity.WineOrder;
 import vip.wqs.order.modular.record.enums.OrderStatusEnum;
 import vip.wqs.order.modular.record.mapper.WineOrderMapper;
@@ -29,6 +31,7 @@ import vip.wqs.order.modular.record.param.WineOrderCreateParam;
 import vip.wqs.order.modular.record.param.WineOrderIdParam;
 import vip.wqs.order.modular.record.param.WineOrderPageParam;
 import vip.wqs.order.modular.record.service.WineOrderService;
+import vip.wqs.common.util.ControllerTimestampUtil;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -46,6 +49,11 @@ public class WineOrderServiceImpl extends ServiceImpl<WineOrderMapper, WineOrder
 
     @Autowired
     private WineCommissionRecordApi wineCommissionRecordApi;
+
+    @Autowired
+    private WineProductApi wineProductApi;
+    
+
 
     @Override
     public Page<WineOrder> page(WineOrderPageParam wineOrderPageParam) {
@@ -122,6 +130,23 @@ public class WineOrderServiceImpl extends ServiceImpl<WineOrderMapper, WineOrder
         wineOrder.setWineId(wineId);
         wineOrder.setAmount(amount);
         wineOrder.setUnitPrice(unitPrice);
+        
+        // 🔧 设置酒品名称 - 从酒品ID获取酒品名称
+        if (StrUtil.isNotBlank(wineId)) {
+            try {
+                WineProductPojo wineProduct = wineProductApi.getWineProductDetail(wineId);
+                if (wineProduct != null && StrUtil.isNotBlank(wineProduct.getProductName())) {
+                    wineOrder.setWineName(wineProduct.getProductName());
+                    log.info("创建订单时获取酒品名称成功，wineId: {}, wineName: {}", wineId, wineProduct.getProductName());
+                } else {
+                    wineOrder.setWineName("共享售酒机酒品");
+                    log.warn("酒品信息为空或名称为空，使用默认名称，wineId: {}", wineId);
+                }
+            } catch (Exception e) {
+                log.warn("获取酒品名称失败，使用默认名称，wineId: {}, 错误: {}", wineId, e.getMessage());
+                wineOrder.setWineName("共享售酒机酒品");
+            }
+        }
         
         // 计算总金额
         BigDecimal totalAmount = unitPrice.multiply(BigDecimal.valueOf(amount));
@@ -297,11 +322,24 @@ public class WineOrderServiceImpl extends ServiceImpl<WineOrderMapper, WineOrder
 
     /**
      * 生成订单号
-     * 格式：WO + yyyyMMddHHmmss + 4位随机数
+     * 格式：WO + 控制器兼容时间戳 + 4位随机数
+     * 
+     * 控制器要求：
+     * - 时间戳不能重复使用
+     * - 后续指令的时间戳必须大于上一次启动成功的数值
+     * - 最小值：102401，最大值：2147483647
      *
      * @return 订单号
      */
     private String generateOrderNo() {
-        return "WO" + System.currentTimeMillis() + String.format("%04d", (int)(Math.random() * 10000));
+        // 使用工具类生成唯一的控制器时间戳字符串
+
+        // 生成最终的订单号：WO + 控制器时间戳字符串
+        String orderNo = ControllerTimestampUtil.generateUniqueTimestampString();
+        
+        log.debug("生成订单号：{}", orderNo);
+        log.debug("订单号长度：{}", orderNo.length());
+        
+        return orderNo;
     }
 } 

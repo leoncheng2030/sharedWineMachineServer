@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vip.wqs.device.modular.control.param.DeviceControlParam;
 import vip.wqs.device.modular.control.service.EncryptApiService;
+import vip.wqs.common.util.ControllerTimestampUtil;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -58,7 +59,7 @@ public class EncryptApiServiceImpl implements EncryptApiService {
 
             // 3. 解析响应
             JSONObject responseJson = JSONUtil.parseObj(response);
-            String cmd = responseJson.getStr("CMD");
+            String cmd = responseJson.getStr("cmd");
 
             if (StrUtil.isBlank(cmd)) {
                 log.error("第三方接口未返回CMD指令，响应：{}", response);
@@ -74,33 +75,13 @@ public class EncryptApiServiceImpl implements EncryptApiService {
         }
     }
 
-    @Override
-    public boolean checkApiConnectivity() {
-        try {
-            // 使用测试参数检查接口连通性
-            Map<String, Object> testData = new HashMap<>();
-            testData.put("UUID", "TEST_UUID");
-            testData.put("device_id", "0");
-            testData.put("charge_id", "0");
-            testData.put("minute", "0");
-            testData.put("second", "30");
-
-            String response = HttpUtil.post(encryptApiUrl, testData, timeout);
-            return StrUtil.isNotBlank(response);
-
-        } catch (Exception e) {
-            log.error("检查第三方接口连通性异常", e);
-            return false;
-        }
-    }
-
     /**
      * 构建请求参数
      */
     private Map<String, Object> buildRequestData(DeviceControlParam param) {
         Map<String, Object> data = new HashMap<>();
         data.put("UUID", param.getUuid());
-        data.put("device_id", param.getDeviceId());
+        data.put("device_id", param.getDeviceCode());
         data.put("charge_id", param.getChargeId());
         data.put("minute", param.getMinute() != null ? param.getMinute() : 0);
         data.put("second", param.getSecond() != null ? param.getSecond() : 30);

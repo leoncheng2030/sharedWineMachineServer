@@ -185,4 +185,26 @@ public class WineOrderPojo implements Serializable {
     /** 支付状态 */
     @Schema(description = "支付状态")
     private String payStatus;
+
+    /** 控制指令 */
+    @Schema(description = "控制指令")
+    private String controlCmd;
+
+    // ========== 小程序UI显示字段 ==========
+
+    /** 是否显示支付按钮 */
+    @Schema(description = "是否显示支付按钮")
+    private Boolean showPayButton;
+
+    /** 是否显示取消按钮 */
+    @Schema(description = "是否显示取消按钮")
+    private Boolean showCancelButton;
+
+    /** 是否显示退款按钮 */
+    @Schema(description = "是否显示退款按钮")
+    private Boolean showRefundButton;
+
+    /** 订单进度百分比 */
+    @Schema(description = "订单进度百分比")
+    private Integer progressPercent;
 } 

@@ -1,5 +1,5 @@
 /*
- * Copyright [2025] [https://www.wqs.vip]
+ * Copyright [2022] [https://www.wqs.vip]
  *
  * WQS采用APACHE LICENSE 2.0开源协议，您在使用过程中，需要注意以下几点：
  *
@@ -12,6 +12,7 @@
  */
 package vip.wqs.order.modular.record.provider;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.annotation.Resource;
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
 
 /**
  * 订单管理API接口实现类
+ * 参考AuthServiceImpl的设计模式，使用BeanUtils简化转换过程
  *
  * @author wqs
  * @date 2025/01/30 16:30
@@ -147,6 +149,7 @@ public class WineOrderApiProvider implements WineOrderApi {
     
     /**
      * 将WineOrder实体转换为WineOrderPojo
+     * 参考AuthServiceImpl的设计模式，使用BeanUtils简化转换过程
      *
      * @param wineOrder 订单实体
      * @return 订单Pojo
@@ -157,21 +160,24 @@ public class WineOrderApiProvider implements WineOrderApi {
         }
         
         WineOrderPojo pojo = new WineOrderPojo();
-        // 设置基本字段
-        pojo.setId(wineOrder.getId());
-        pojo.setOrderNo(wineOrder.getOrderNo());
-        pojo.setUserId(wineOrder.getUserId());
-        pojo.setDeviceId(wineOrder.getDeviceId());
-        pojo.setWineId(wineOrder.getWineId());
-        pojo.setWineName(wineOrder.getWineName());
-        pojo.setAmount(wineOrder.getAmount());
-        pojo.setUnitPrice(wineOrder.getUnitPrice());
-        pojo.setTotalAmount(wineOrder.getTotalAmount());
-        pojo.setStatus(wineOrder.getStatus());
-        pojo.setCreateTime(wineOrder.getCreateTime());
-        pojo.setUpdateTime(wineOrder.getUpdateTime());
+        // 使用BeanUtils.copyProperties进行基础字段复制
+        BeanUtil.copyProperties(wineOrder, pojo);
         
-        // 获取设备信息并填充
+        // 动态填充扩展信息（参考AuthServiceImpl.fillSaBaseClientLoginUserAndUpdateCache的设计）
+        fillWineOrderExtInfo(pojo, wineOrder);
+        
+        return pojo;
+    }
+    
+    /**
+     * 动态填充订单扩展信息
+     * 参考AuthServiceImpl.fillSaBaseClientLoginUserAndUpdateCache的设计模式
+     *
+     * @param pojo 订单响应对象
+     * @param wineOrder 订单实体
+     */
+    private void fillWineOrderExtInfo(WineOrderPojo pojo, WineOrder wineOrder) {
+        // 填充设备信息
         if (StrUtil.isNotBlank(wineOrder.getDeviceId())) {
             try {
                 DevicePojo deviceInfo = deviceApi.getDeviceDetail(wineOrder.getDeviceId());
@@ -188,45 +194,89 @@ public class WineOrderApiProvider implements WineOrderApi {
             }
         }
         
-        // 获取酒品信息并填充图片
+        // 填充酒品信息
         if (StrUtil.isNotBlank(wineOrder.getWineId())) {
             try {
-                System.out.println("🍷 开始获取酒品信息，wineId: " + wineOrder.getWineId());
                 WineProductPojo wineProduct = wineProductApi.getWineProductDetail(wineOrder.getWineId());
                 if (wineProduct != null) {
-                    System.out.println("🍷 酒品信息获取成功: " + wineProduct.getProductName());
-                    System.out.println("🍷 酒品图片URL: " + wineProduct.getImageUrl());
+                    // 设置酒品图片
                     if (StrUtil.isNotBlank(wineProduct.getImageUrl())) {
                         pojo.setWineImage(wineProduct.getImageUrl());
-                        System.out.println("🍷 酒品图片设置成功: " + wineProduct.getImageUrl());
-                    } else {
-                        System.out.println("🍷 酒品图片URL为空");
                     }
-                } else {
-                    System.out.println("🍷 酒品信息为空，wineId: " + wineOrder.getWineId());
+                    // 设置酒品规格（使用净含量信息）
+                    if (wineProduct.getVolume() != null) {
+                        pojo.setWineSpec(wineProduct.getVolume() + "ml");
+                    }
+                    // 设置酒精度数
+                    if (wineProduct.getAlcoholContent() != null) {
+                        pojo.setAlcoholDegree(wineProduct.getAlcoholContent());
+                    }
+                    // 如果wineName为空，使用酒品名称
+                    if (StrUtil.isBlank(pojo.getWineName())) {
+                        pojo.setWineName(wineProduct.getProductName());
+                    }
                 }
             } catch (Exception e) {
-                System.err.println("🍷 获取酒品信息失败，wineId: " + wineOrder.getWineId() + "，错误: " + e.getMessage());
-                e.printStackTrace();
-                // 酒品信息获取失败时，忽略错误
-                // 不设置图片，保持为null
+                // 酒品信息获取失败时，使用默认值
+                if (StrUtil.isBlank(pojo.getWineName())) {
+                    pojo.setWineName("共享售酒机酒品");
+                }
             }
         }
         
-        // 其他字段暂时注释，避免编译错误
-        // pojo.setServiceFee(wineOrder.getServiceFee());
-        // pojo.setPayTime(wineOrder.getPayTime());
-        // pojo.setDispenseStartTime(wineOrder.getDispenseStartTime());
-        // pojo.setDispenseEndTime(wineOrder.getDispenseEndTime());
-        // pojo.setCancelTime(wineOrder.getCancelTime());
-        // pojo.setCancelReason(wineOrder.getCancelReason());
-        // pojo.setRefundTime(wineOrder.getRefundTime());
-        // pojo.setRefundAmount(wineOrder.getRefundAmount());
-        // pojo.setRemark(wineOrder.getRemark());
-        // pojo.setExtJson(wineOrder.getExtJson());
-        // pojo.setCreateUser(wineOrder.getCreateUser());
-        // pojo.setUpdateUser(wineOrder.getUpdateUser());
+        // 填充业务逻辑字段（小程序专用）
+        fillBusinessLogicFields(pojo, wineOrder);
+    }
+    
+    /**
+     * 填充业务逻辑字段
+     * 参考AuthServiceImpl中权限、角色等信息的填充逻辑
+     *
+     * @param pojo 订单响应对象
+     * @param wineOrder 订单实体
+     */
+    private void fillBusinessLogicFields(WineOrderPojo pojo, WineOrder wineOrder) {
+        String status = wineOrder.getStatus();
         
-        return pojo;
+        // 设置订单状态显示文本
+        switch (status) {
+            case "PENDING":
+                pojo.setStatusText("待支付");
+                break;
+            case "PAID":
+                pojo.setStatusText("已支付");
+                break;
+            case "DISPENSING":
+                pojo.setStatusText("出酒中");
+                break;
+            case "COMPLETED":
+                pojo.setStatusText("已完成");
+                break;
+            case "CANCELLED":
+                pojo.setStatusText("已取消");
+                break;
+            case "REFUNDED":
+                pojo.setStatusText("已退款");
+                break;
+            default:
+                pojo.setStatusText("未知状态");
+        }
+        
+        // 设置操作权限（小程序专用字段）
+        pojo.setCanCancel("PENDING".equals(status)); // 待支付状态可以取消
+        pojo.setCanPay("PENDING".equals(status)); // 待支付状态可以支付
+        pojo.setCanRefund("PAID".equals(status) || "DISPENSING".equals(status)); // 已支付或出酒中可以申请退款
+        
+        // 设置实际支付金额（总金额 + 服务费）
+        BigDecimal totalAmount = wineOrder.getTotalAmount() != null ? wineOrder.getTotalAmount() : BigDecimal.ZERO;
+        BigDecimal serviceFee = wineOrder.getServiceFee() != null ? wineOrder.getServiceFee() : BigDecimal.ZERO;
+        pojo.setActualAmount(totalAmount.add(serviceFee));
+        
+        // 设置优惠金额（暂时为0）
+        pojo.setDiscountAmount(BigDecimal.ZERO);
+        
+        // 设置支付方式和状态（暂时使用默认值）
+        pojo.setPayType("WECHAT_PAY");
+        pojo.setPayStatus("PAID".equals(status) ? "SUCCESS" : "PENDING");
     }
 }

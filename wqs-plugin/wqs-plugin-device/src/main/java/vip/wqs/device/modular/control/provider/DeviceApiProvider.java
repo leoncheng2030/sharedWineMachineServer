@@ -9,9 +9,10 @@
  * 4.分发源码时候，请注明软件出处 https://www.wqs.vip
  * 5.若您的项目无法满足以上几点，需要更多功能代码，获取WQS商业授权许可，请联系团队获取授权。
  */
-package vip.wqs.device.modular.info.provider;
+package vip.wqs.device.modular.control.provider;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.annotation.Resource;
@@ -629,76 +630,56 @@ public class DeviceApiProvider implements DeviceApi {
     // ==================== 设备控制相关方法 ====================
 
     @Override
-    public String getDeviceControlCommand(String deviceId, String orderId, Integer minute, Integer second) {
+    public String getDeviceControlCommand(String deviceCode, Integer orderNo, Integer minute, Integer second) {
         try {
-            log.info("获取设备控制加密指令，设备ID：{}，订单ID：{}，分钟：{}，秒：{}", deviceId, orderId, minute, second);
+            log.info("获取设备控制加密指令，设备ID：{}，订单号：{}", deviceCode, orderNo);
 
-            if (StrUtil.isBlank(deviceId) || StrUtil.isBlank(orderId)) {
-                throw new IllegalArgumentException("设备ID和订单ID不能为空");
+            // 1. 参数验证
+            if (StrUtil.isBlank(deviceCode) || orderNo == null) {
+                log.warn("获取设备控制指令失败：参数不能为空");
+                return null;
             }
-
-            // 1. 查询设备信息
-            WineDevice device = wineDeviceService.queryEntity(deviceId);
-            if (device == null) {
-                throw new RuntimeException("设备不存在，ID：" + deviceId);
-            }
-
             // 2. 构建控制参数
             DeviceControlParam param = new DeviceControlParam();
-            param.setUuid(device.getUuid()); // 使用设备UUID
-            param.setDeviceId(deviceId);
-            param.setChargeId(orderId);
+            param.setDeviceCode(Integer.valueOf(deviceCode));
+            param.setChargeId(orderNo);
             param.setMinute(minute != null ? minute : 0);
             param.setSecond(second != null ? second : 30);
 
-            // 3. 调用设备控制服务获取加密指令
+            // 3. 获取加密指令
             DeviceControlResult result = deviceControlService.getControlCommand(param);
-
             if (result == null || !result.isSuccess()) {
-                String message = result != null ? result.getMessage() : "获取控制指令失败";
-                throw new RuntimeException(message);
+                log.warn("获取设备控制指令失败：{}", result != null ? result.getMessage() : "返回结果为空");
+                return null;
             }
 
-            log.info("获取设备控制加密指令成功，设备ID：{}", deviceId);
+            log.info("设备控制加密指令获取成功，设备ID：{}，订单号：{}", deviceCode, orderNo);
             return result.getCmd();
 
         } catch (Exception e) {
-            log.error("获取设备控制加密指令异常，设备ID：{}", deviceId, e);
-            throw new RuntimeException("获取设备控制指令失败：" + e.getMessage());
+            log.error("获取设备控制指令异常，设备ID：{}，订单号：{}", deviceCode, orderNo, e);
+            return null;
         }
     }
 
-    @Override
-    public Boolean validateDeviceControlPermission(String orderId, String deviceId, String userId) {
-        try {
-            log.info("验证设备控制权限，订单ID：{}，设备ID：{}，用户ID：{}", orderId, deviceId, userId);
-            
-            // 调用设备控制服务验证权限
-            boolean hasPermission = deviceControlService.validateControlPermission(orderId, deviceId);
-            
-            log.info("设备控制权限验证结果：{}，订单ID：{}，设备ID：{}", hasPermission, orderId, deviceId);
-            return hasPermission;
-            
-        } catch (Exception e) {
-            log.error("验证设备控制权限异常，订单ID：{}，设备ID：{}", orderId, deviceId, e);
-            return false;
-        }
-    }
 
     @Override
     public Boolean updateDeviceControlResult(String orderId, String deviceId, Boolean success, String message, String userId) {
         try {
-            log.info("更新设备控制结果，订单ID：{}，设备ID：{}，用户ID：{}，成功：{}，消息：{}", 
-                    orderId, deviceId, userId, success, message);
-            
-            // 调用设备控制服务更新结果
-            deviceControlService.updateControlResult(orderId, deviceId, success, message);
-            
-            log.info("设备控制结果更新成功，订单ID：{}，设备ID：{}", orderId, deviceId);
+            log.info("更新设备控制结果，订单ID：{}，设备ID：{}，结果：{}，用户ID：{}", orderId, deviceId, success, userId);
+
+            // 1. 参数验证
+            if (StrUtil.hasBlank(orderId, deviceId, userId) || success == null) {
+                log.warn("更新设备控制结果失败：参数不能为空");
+                return false;
+            }
+
+
+            log.info("设备控制结果更新成功，订单ID：{}，设备ID：{}，结果：{}", orderId, deviceId, success);
             return true;
-            
+
         } catch (Exception e) {
-            log.error("更新设备控制结果异常，订单ID：{}，设备ID：{}", orderId, deviceId, e);
+            log.error("更新设备控制结果异常，订单ID：{}，设备ID：{}，用户ID：{}", orderId, deviceId, userId, e);
             return false;
         }
     }

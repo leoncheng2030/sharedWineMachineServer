@@ -9,12 +9,14 @@
  * 4.分发源码时候，请注明软件出处 https://www.wqs.vip
  * 5.若您的项目无法满足以上几点，需要更多功能代码，获取WQS商业授权许可，请联系团队获取授权。
  */
-package vip.wqs.miniprogram.modular.wine.controller;
+package vip.wqs.miniprogram.modular;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.github.xiaoymin.knife4j.annotations.ApiSupport;
+
+import java.math.BigDecimal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -27,7 +29,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import vip.wqs.common.annotation.CommonLog;
 import vip.wqs.common.pojo.CommonResult;
-import vip.wqs.miniprogram.modular.wine.param.MiniWinePageParam;
 import vip.wqs.wine.api.WineProductApi;
 import vip.wqs.wine.pojo.WineProductPojo;
 import vip.wqs.wine.pojo.WineProductQueryPojo;
@@ -63,15 +64,25 @@ public class MiniWineController {
     @Operation(summary = "获取酒品分页列表")
     @CommonLog("小程序获取酒品列表")
     @GetMapping("/miniprogram/wine/page")
-    public CommonResult<Page<WineProductSimplePojo>> getWinePage(@Valid MiniWinePageParam param) {
+    public CommonResult<Page<WineProductSimplePojo>> getWinePage(@Valid WineProductQueryPojo param,
+                                                                @RequestParam(required = false) Double minPrice,
+                                                                @RequestParam(required = false) Double maxPrice) {
         try {
             log.info("小程序获取酒品列表，参数：{}", param);
             
-            // 1. 转换查询参数
-            WineProductQueryPojo queryPojo = convertToQueryPojo(param);
+            // 小程序特有逻辑：处理价格范围筛选
+            if (minPrice != null) {
+                param.setMinPrice(BigDecimal.valueOf(minPrice));
+            }
+            if (maxPrice != null) {
+                param.setMaxPrice(BigDecimal.valueOf(maxPrice));
+            }
             
-            // 2. 调用酒品API获取分页数据
-            Page<WineProductSimplePojo> result = wineProductApi.getWineProductPage(queryPojo);
+            // 小程序业务逻辑：默认只查询启用的酒品
+            param.setStatus("ENABLE");
+            
+            // 调用酒品API获取分页数据
+            Page<WineProductSimplePojo> result = wineProductApi.getWineProductPage(param);
             
             if (result == null) {
                 return CommonResult.error("获取酒品列表失败");
@@ -395,27 +406,5 @@ public class MiniWineController {
         }
     }
 
-    /**
-     * 转换查询参数
-     */
-    private WineProductQueryPojo convertToQueryPojo(MiniWinePageParam param) {
-        WineProductQueryPojo queryPojo = new WineProductQueryPojo();
-        
-        // 基础分页参数 - 类型转换 Long -> Integer
-        queryPojo.setPageNum(param.getPageNum().intValue());
-        queryPojo.setPageSize(param.getPageSize().intValue());
-        
-        // 查询条件
-        queryPojo.setCategoryId(param.getCategoryId());
-        queryPojo.setProductName(param.getKeyword()); // 关键词搜索商品名称
-        
-        // 排序参数
-        queryPojo.setSortField(param.getSortField());
-        queryPojo.setSortOrder(param.getSortOrder());
-        
-        // 默认只查询启用的酒品
-        queryPojo.setStatus("ENABLE");
-        
-        return queryPojo;
-    }
+
 } 

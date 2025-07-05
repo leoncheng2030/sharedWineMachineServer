@@ -9,7 +9,7 @@
  * 4.分发源码时候，请注明软件出处 https://www.wqs.vip
  * 5.若您的项目无法满足以上几点，需要更多功能代码，获取WQS商业授权许可，请联系团队获取授权。
  */
-package vip.wqs.miniprogram.modular.store.controller;
+package vip.wqs.miniprogram.modular;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -27,7 +27,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import vip.wqs.common.annotation.CommonLog;
 import vip.wqs.common.pojo.CommonResult;
-import vip.wqs.miniprogram.modular.store.param.MiniStorePageParam;
 import vip.wqs.store.api.WineStoreApi;
 import vip.wqs.store.pojo.WineStorePojo;
 import vip.wqs.store.pojo.WineStoreQueryPojo;
@@ -62,15 +61,29 @@ public class MiniStoreController {
     @Operation(summary = "获取门店分页列表")
     @CommonLog("小程序获取门店列表")
     @GetMapping("/miniprogram/store/page")
-    public CommonResult<Page<WineStoreSimplePojo>> getStorePage(@Valid MiniStorePageParam param) {
+    public CommonResult<Page<WineStoreSimplePojo>> getStorePage(@Valid WineStoreQueryPojo param,
+                                                               @RequestParam(required = false) Double longitude,
+                                                               @RequestParam(required = false) Double latitude,
+                                                               @RequestParam(required = false) Double radius) {
         try {
             log.info("小程序获取门店列表，参数：{}", param);
             
-            // 1. 转换查询参数
-            WineStoreQueryPojo queryPojo = convertToQueryPojo(param);
+            // 小程序特有逻辑：处理位置信息和搜索半径
+            if (longitude != null && latitude != null) {
+                param.setLongitude(longitude);
+                param.setLatitude(latitude);
+                if (radius != null) {
+                    param.setRadius(radius);
+                } else {
+                    param.setRadius(5.0); // 默认5公里
+                }
+            }
             
-            // 2. 调用门店API获取分页数据
-            Page<WineStoreSimplePojo> result = wineStoreApi.getWineStorePage(queryPojo);
+            // 小程序业务逻辑：默认只查询营业中的门店
+            param.setOnlyOpen(true);
+            
+            // 调用门店API获取分页数据
+            Page<WineStoreSimplePojo> result = wineStoreApi.getWineStorePage(param);
             
             if (result == null) {
                 return CommonResult.error("获取门店列表失败");
@@ -340,58 +353,5 @@ public class MiniStoreController {
         }
     }
 
-    /**
-     * 分页参数转换为查询参数
-     */
-    private WineStoreQueryPojo convertToQueryPojo(MiniStorePageParam param) {
-        WineStoreQueryPojo queryPojo = new WineStoreQueryPojo();
-        
-        // 基础分页参数
-        queryPojo.setPageNum(param.getPageNum().intValue());
-        queryPojo.setPageSize(param.getPageSize().intValue());
-        
-        // 搜索关键词
-        if (StrUtil.isNotBlank(param.getKeyword())) {
-            queryPojo.setKeyword(param.getKeyword());
-        }
-        
-        // 门店状态
-        if (StrUtil.isNotBlank(param.getStatus())) {
-            queryPojo.setStatus(param.getStatus());
-        }
-        
-        // 地区筛选
-        if (StrUtil.isNotBlank(param.getProvince())) {
-            queryPojo.setProvince(param.getProvince());
-        }
-        if (StrUtil.isNotBlank(param.getCity())) {
-            queryPojo.setCity(param.getCity());
-        }
-        if (StrUtil.isNotBlank(param.getDistrict())) {
-            queryPojo.setDistrict(param.getDistrict());
-        }
-        
-        // 位置信息（用于附近门店查询）
-        if (param.getLongitude() != null && param.getLatitude() != null) {
-            queryPojo.setLongitude(param.getLongitude());
-            queryPojo.setLatitude(param.getLatitude());
-            if (param.getRadius() != null) {
-                queryPojo.setRadius(param.getRadius());
-            }
-        }
-        
-        // 排序参数
-        if (StrUtil.isNotBlank(param.getSortField())) {
-            queryPojo.setSortField(param.getSortField());
-            queryPojo.setSortOrder(StrUtil.isNotBlank(param.getSortOrder()) ? 
-                    param.getSortOrder() : "ASC");
-        }
-        
-        // 只查询启用状态的门店（默认只显示营业中的门店）
-        if (StrUtil.isBlank(queryPojo.getStatus())) {
-            queryPojo.setStatus("ENABLE");
-        }
-        
-        return queryPojo;
-    }
+
 } 

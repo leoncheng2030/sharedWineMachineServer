@@ -124,18 +124,13 @@ public class WechatPayServiceImpl implements WechatPayService {
                 throw new CommonException("不支持的支付方式：" + wechatPayCreateParam.getPayType());
             }
 
-            switch (paymentType) {
-                case WECHAT_MINI:
-                    return createJsapiPayOrder(wechatPayCreateParam);
-                case WECHAT_H5:
-                    return createH5PayOrder(wechatPayCreateParam);
-                case WECHAT_APP:
-                    return createAppPayOrder(wechatPayCreateParam);
-                case WECHAT_NATIVE:
-                    return createNativePayOrder(wechatPayCreateParam);
-                default:
-                    throw new CommonException("不支持的微信支付方式：" + paymentType.getMessage());
-            }
+            return switch (paymentType) {
+                case WECHAT_MINI -> createJsapiPayOrder(wechatPayCreateParam);
+                case WECHAT_H5 -> createH5PayOrder(wechatPayCreateParam);
+                case WECHAT_APP -> createAppPayOrder(wechatPayCreateParam);
+                case WECHAT_NATIVE -> createNativePayOrder(wechatPayCreateParam);
+                default -> throw new CommonException("不支持的微信支付方式：" + paymentType.getMessage());
+            };
         } catch (Exception e) {
             log.error("创建微信支付订单失败：{}", e.getMessage(), e);
             throw new CommonException("创建微信支付订单失败：" + e.getMessage());

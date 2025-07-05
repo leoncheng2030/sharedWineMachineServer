@@ -28,13 +28,13 @@ public class DeviceControlParam {
     @Schema(description = "设备蓝牙UUID标识")
     private String uuid;
 
-    /** 设备ID */
-    @Schema(description = "设备ID")
-    private String deviceId;
+    /** 设备Code */
+    @Schema(description = "设备Code")
+    private Integer deviceCode;
 
     /** 订单ID（充电ID） */
     @Schema(description = "订单ID")
-    private String chargeId;
+    private Integer chargeId;
 
     /** 控制时长-分钟 */
     @Schema(description = "控制时长-分钟")

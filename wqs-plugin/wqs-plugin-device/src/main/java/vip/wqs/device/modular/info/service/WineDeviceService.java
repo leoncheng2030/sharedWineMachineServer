@@ -215,4 +215,14 @@ public interface WineDeviceService extends IService<WineDevice> {
      * @date 2025/1/27
      */
     void unbind(WineDeviceIdParam wineDeviceIdParam);
+
+    /**
+     * 根据deviceCode获取设备信息
+     *
+     * @param deviceCode 设备编码
+     * @return 设备信息
+     * @author wqs
+     * @date 2025/1/27
+     */
+    WineDevice getDeviceByDeviceCode(String deviceCode);
 } 

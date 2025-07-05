@@ -166,28 +166,15 @@ public interface DeviceApi {
      * 获取设备控制加密指令
      * 小程序端调用此接口获取加密控制指令，然后通过蓝牙发送给设备
      *
-     * @param deviceId 设备ID
-     * @param orderId 订单ID
+     * @param deviceCode 设备ID
+     * @param orderNo 订单ID
      * @param minute 通电分钟数（可选）
      * @param second 通电秒数（可选）
      * @return 控制指令结果
      * @author AI Assistant
      * @date 2025/01/30
      */
-    String getDeviceControlCommand(String deviceId, String orderId, Integer minute, Integer second);
-
-    /**
-     * 验证设备控制权限
-     * 检查订单和设备是否可以进行控制操作
-     *
-     * @param orderId 订单ID
-     * @param deviceId 设备ID
-     * @param userId 用户ID
-     * @return 是否有权限
-     * @author AI Assistant
-     * @date 2025/01/30
-     */
-    Boolean validateDeviceControlPermission(String orderId, String deviceId, String userId);
+    String getDeviceControlCommand(String deviceCode, Integer orderNo, Integer minute, Integer second);
 
     /**
      * 更新设备控制执行结果

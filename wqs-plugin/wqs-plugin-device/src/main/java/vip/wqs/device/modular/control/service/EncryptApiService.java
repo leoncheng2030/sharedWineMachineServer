@@ -28,11 +28,4 @@ public interface EncryptApiService {
      * @return 加密指令
      */
     String getEncryptCommand(DeviceControlParam param);
-
-    /**
-     * 验证第三方接口连通性
-     *
-     * @return 是否连通
-     */
-    boolean checkApiConnectivity();
 }

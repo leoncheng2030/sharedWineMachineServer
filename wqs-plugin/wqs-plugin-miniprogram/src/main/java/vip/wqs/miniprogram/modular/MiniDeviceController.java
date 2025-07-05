@@ -37,6 +37,8 @@ import vip.wqs.device.dto.MiniDeviceStatusDto;
 import vip.wqs.device.pojo.DevicePojo;
 import vip.wqs.device.pojo.DeviceQueryPojo;
 import vip.wqs.device.pojo.DeviceSimplePojo;
+import vip.wqs.order.api.WineOrderApi;
+import vip.wqs.order.pojo.WineOrderPojo;
 import vip.wqs.store.api.WineStoreApi;
 import vip.wqs.store.pojo.WineStorePojo;
 import vip.wqs.wine.api.WinePriceApi;
@@ -47,6 +49,9 @@ import vip.wqs.wine.pojo.WineProductPojo;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
 
 /**
  * 小程序设备管理控制器
@@ -75,6 +80,9 @@ public class MiniDeviceController {
 
     @Resource
     private WineDeviceStockApi wineDeviceStockApi;
+
+    @Resource
+    private WineOrderApi wineOrderApi;
 
 
 
@@ -194,79 +202,181 @@ public class MiniDeviceController {
 
     /**
      * 构建小程序所需的设备详情数据
+     * 
+     * @param deviceDetail 设备详情
+     * @return 小程序设备详情数据
      */
     private Object buildDeviceDetailForMiniProgram(DevicePojo deviceDetail) {
-        // 构建符合小程序设备详情页面需求的数据结构
-        java.util.Map<String, Object> result = new java.util.HashMap<>();
-        
-        // 设备基本信息
-        result.put("id", deviceDetail.getId());
-        result.put("deviceCode", deviceDetail.getDeviceCode());
-        result.put("name", deviceDetail.getDeviceName());
-        result.put("location", deviceDetail.getLocation());
-        result.put("status", deviceDetail.getStatus().toLowerCase());
-        
-        // 门店信息
-
-        if (StrUtil.isNotBlank(deviceDetail.getStoreId())){
-            WineStorePojo wineStoreDetail = wineStoreApi.getWineStoreDetail(deviceDetail.getStoreId());
-            java.util.Map<String, Object> storeInfo = new java.util.HashMap<>();
-            storeInfo.put("id", wineStoreDetail.getId());
-            storeInfo.put("name", wineStoreDetail.getStoreName());
-            storeInfo.put("code", wineStoreDetail.getStoreCode());
-            storeInfo.put("managerId", wineStoreDetail.getStoreManagerId());
-            storeInfo.put("managerName", wineStoreDetail.getStoreManagerUserName() != null ? wineStoreDetail.getStoreManagerUserName() : "王小虎");
-            storeInfo.put("image", wineStoreDetail.getImageUrl() != null ? wineStoreDetail.getImageUrl() : "/static/images/store_image.jpg");
-            storeInfo.put("province", wineStoreDetail.getProvince() != null ? wineStoreDetail.getProvince() : "北京");
-            storeInfo.put("city", wineStoreDetail.getCity() != null ? wineStoreDetail.getCity() : "北京");
-            storeInfo.put("district", wineStoreDetail.getDistrict() != null ? wineStoreDetail.getDistrict() : "朝阳区");
-            storeInfo.put("fullAddress", wineStoreDetail.getFullAddress() != null ? wineStoreDetail.getFullAddress() : "北京市朝阳区建国路93号万达广场1楼");
-            result.put("storeInfo", storeInfo);
+        try {
+            // 1. 基础转换
+            Map<String, Object> result = new HashMap<>();
+            result.put("id", deviceDetail.getId());
+            result.put("deviceCode", deviceDetail.getDeviceCode());
+            result.put("name", deviceDetail.getDeviceName());
+            result.put("location", deviceDetail.getLocation());
+            result.put("status", deviceDetail.getStatus() != null ? deviceDetail.getStatus().toLowerCase() : "offline");
+            
+            // 2. 动态填充扩展信息
+            fillStoreInfo(result, deviceDetail.getStoreId());
+            fillWineInfo(result, deviceDetail);
+            
+            return result;
+            
+        } catch (Exception e) {
+            log.error("构建小程序设备详情失败，设备ID：{}，错误：{}", deviceDetail.getId(), e.getMessage(), e);
+            // 返回基础信息，确保接口不会完全失败
+            Map<String, Object> fallbackResult = new HashMap<>();
+            fallbackResult.put("id", deviceDetail.getId());
+            fallbackResult.put("deviceCode", deviceDetail.getDeviceCode());
+            fallbackResult.put("name", deviceDetail.getDeviceName());
+            fallbackResult.put("location", deviceDetail.getLocation());
+            fallbackResult.put("status", "offline");
+            fallbackResult.put("storeInfo", null);
+            fallbackResult.put("wineInfo", null);
+            return fallbackResult;
         }
+    }
 
-        // 酒品信息（如果设备绑定了酒品）
-        if (StrUtil.isNotBlank(deviceDetail.getCurrentProductId())) {
-            WineProductPojo wineProductDetail = wineProductApi.getWineProductDetail(deviceDetail.getCurrentProductId());
-            java.util.Map<String, Object> wineInfo = new java.util.HashMap<>();
-            wineInfo.put("id", wineProductDetail.getId());
-            wineInfo.put("name", wineProductDetail.getProductName() != null ? wineProductDetail.getProductName() : "五粮液散酒");
-            wineInfo.put("brand", wineProductDetail.getBrand()!= null ? wineProductDetail.getBrand() : "五粮液");
-            wineInfo.put("type", wineProductDetail.getProductType()!= null ? wineProductDetail.getProductType() : "白酒");
-            wineInfo.put("alcoholContent", wineProductDetail.getAlcoholContent()!= null ? wineProductDetail.getAlcoholContent() : 12);
-            wineInfo.put("image", wineProductDetail.getImageUrl()!= null ? wineProductDetail.getImageUrl() : "/static/images/wine.png");
-            wineInfo.put("unitPrice", wineProductDetail.getSuggestedPrice()!=null ? wineProductDetail.getUnitPrice() : 0); // 每ml价格
-            // 集成真实库存查询
-            try {
-                BigDecimal stockQuantity = wineDeviceStockApi.getStockQuantity(deviceDetail.getId(), deviceDetail.getCurrentProductId());
-                wineInfo.put("stock", stockQuantity != null ? stockQuantity.intValue() : 0);
-            } catch (Exception e) {
-                log.warn("查询设备库存失败，设备ID：{}，酒品ID：{}，错误：{}", 
-                        deviceDetail.getId(), deviceDetail.getCurrentProductId(), e.getMessage());
-                wineInfo.put("stock", 0); // 查询失败时返回0
+    /**
+     * 填充门店信息
+     * 
+     * @param result 结果Map
+     * @param storeId 门店ID
+     */
+    private void fillStoreInfo(Map<String, Object> result, String storeId) {
+        if (StrUtil.isBlank(storeId)) {
+            result.put("storeInfo", null);
+            return;
+        }
+        
+        try {
+            WineStorePojo storeDetail = wineStoreApi.getWineStoreDetail(storeId);
+            if (storeDetail == null) {
+                result.put("storeInfo", null);
+                return;
             }
-            java.util.List<java.util.Map<String, Object>> capacities = new java.util.ArrayList<>();
-            // 容量规格
-            if (StrUtil.isNotBlank(deviceDetail.getCurrentProductId())){
-                List<WinePricePojo> winePriceList = winePriceApi.getWinePriceList(deviceDetail.getCurrentProductId());
-                if (!winePriceList.isEmpty()){
-                    winePriceList.forEach(price -> {
-                        java.util.Map<String, Object> capacity = new java.util.HashMap<>();
-                        capacity.put("id", price.getId());
-                        capacity.put("size", price.getCapacity().intValue()+"ml");
-                        capacity.put("sortCode", price.getSortCode());
-                        capacities.add(capacity);
-                    });
+            
+            Map<String, Object> storeInfo = new HashMap<>();
+            storeInfo.put("id", storeDetail.getId());
+            storeInfo.put("name", storeDetail.getStoreName());
+            storeInfo.put("code", storeDetail.getStoreCode());
+            storeInfo.put("managerId", storeDetail.getStoreManagerId());
+            storeInfo.put("managerName", StrUtil.isNotBlank(storeDetail.getStoreManagerUserName()) ? 
+                    storeDetail.getStoreManagerUserName() : "未设置");
+            storeInfo.put("image", StrUtil.isNotBlank(storeDetail.getImageUrl()) ? 
+                    storeDetail.getImageUrl() : "/static/images/store_default.jpg");
+            storeInfo.put("province", StrUtil.isNotBlank(storeDetail.getProvince()) ? 
+                    storeDetail.getProvince() : "");
+            storeInfo.put("city", StrUtil.isNotBlank(storeDetail.getCity()) ? 
+                    storeDetail.getCity() : "");
+            storeInfo.put("district", StrUtil.isNotBlank(storeDetail.getDistrict()) ? 
+                    storeDetail.getDistrict() : "");
+            storeInfo.put("fullAddress", StrUtil.isNotBlank(storeDetail.getFullAddress()) ? 
+                    storeDetail.getFullAddress() : "");
+            
+            result.put("storeInfo", storeInfo);
+            
+        } catch (Exception e) {
+            log.warn("填充门店信息失败，门店ID：{}，错误：{}", storeId, e.getMessage());
+            result.put("storeInfo", null);
+        }
+    }
 
-                }
+    /**
+     * 填充酒品信息
+     * 
+     * @param result 结果Map
+     * @param deviceDetail 设备详情
+     */
+    private void fillWineInfo(Map<String, Object> result, DevicePojo deviceDetail) {
+        String productId = deviceDetail.getCurrentProductId();
+        if (StrUtil.isBlank(productId)) {
+            result.put("wineInfo", null);
+            return;
+        }
+        
+        try {
+            WineProductPojo productDetail = wineProductApi.getWineProductDetail(productId);
+            if (productDetail == null) {
+                result.put("wineInfo", null);
+                return;
             }
-            wineInfo.put("capacities", capacities);
+            
+            Map<String, Object> wineInfo = new HashMap<>();
+            wineInfo.put("id", productDetail.getId());
+            wineInfo.put("name", StrUtil.isNotBlank(productDetail.getProductName()) ? 
+                    productDetail.getProductName() : "未知酒品");
+            wineInfo.put("brand", StrUtil.isNotBlank(productDetail.getBrand()) ? 
+                    productDetail.getBrand() : "");
+            wineInfo.put("type", StrUtil.isNotBlank(productDetail.getProductType()) ? 
+                    productDetail.getProductType() : "");
+            wineInfo.put("alcoholContent", productDetail.getAlcoholContent() != null ? 
+                    productDetail.getAlcoholContent() : 0);
+            wineInfo.put("image", StrUtil.isNotBlank(productDetail.getImageUrl()) ? 
+                    productDetail.getImageUrl() : "/static/images/wine_default.png");
+            wineInfo.put("unitPrice", productDetail.getUnitPrice() != null ? 
+                    productDetail.getUnitPrice() : BigDecimal.ZERO);
+            
+            // 填充库存信息
+            fillStockInfo(wineInfo, deviceDetail.getId(), productId);
+            
+            // 填充容量规格
+            fillCapacityInfo(wineInfo, productId);
+            
             result.put("wineInfo", wineInfo);
-        } else {
-            // 如果没有绑定酒品，返回空的酒品信息
+            
+        } catch (Exception e) {
+            log.warn("填充酒品信息失败，设备ID：{}，酒品ID：{}，错误：{}", 
+                    deviceDetail.getId(), productId, e.getMessage());
             result.put("wineInfo", null);
         }
-        
-        return result;
+    }
+
+    /**
+     * 填充库存信息
+     * 
+     * @param wineInfo 酒品信息Map
+     * @param deviceId 设备ID
+     * @param productId 酒品ID
+     */
+    private void fillStockInfo(Map<String, Object> wineInfo, String deviceId, String productId) {
+        try {
+            BigDecimal stockQuantity = wineDeviceStockApi.getStockQuantity(deviceId, productId);
+            wineInfo.put("stock", stockQuantity != null ? stockQuantity.intValue() : 0);
+        } catch (Exception e) {
+            log.warn("查询设备库存失败，设备ID：{}，酒品ID：{}，错误：{}", 
+                    deviceId, productId, e.getMessage());
+            wineInfo.put("stock", 0);
+        }
+    }
+
+    /**
+     * 填充容量规格信息
+     * 
+     * @param wineInfo 酒品信息Map
+     * @param productId 酒品ID
+     */
+    private void fillCapacityInfo(Map<String, Object> wineInfo, String productId) {
+        try {
+            List<WinePricePojo> priceList = winePriceApi.getWinePriceList(productId);
+            List<Map<String, Object>> capacities = new ArrayList<>();
+            
+            if (priceList != null && !priceList.isEmpty()) {
+                for (WinePricePojo price : priceList) {
+                    Map<String, Object> capacity = new HashMap<>();
+                    capacity.put("id", price.getId());
+                    capacity.put("size", (price.getCapacity() != null ? price.getCapacity().intValue() : 0) + "ml");
+                    capacity.put("sortCode", price.getSortCode());
+                    capacities.add(capacity);
+                }
+            }
+            
+            wineInfo.put("capacities", capacities);
+            
+        } catch (Exception e) {
+            log.warn("查询酒品容量规格失败，酒品ID：{}，错误：{}", productId, e.getMessage());
+            wineInfo.put("capacities", new ArrayList<>());
+        }
     }
 
     /**
@@ -392,7 +502,8 @@ public class MiniDeviceController {
             // 1. 获取当前用户ID
             String currentUserId = StpClientUtil.getLoginId().toString();
             param.setUserId(currentUserId);
-            
+
+
             // 2. 调用设备API更新蓝牙连接状态
             Boolean result = deviceApi.updateDeviceConnectionStatus(
                 param.getDeviceId(), 
@@ -667,8 +778,8 @@ public class MiniDeviceController {
             
             // 2. 调用设备API获取控制指令
             String command = deviceApi.getDeviceControlCommand(
-                param.getDeviceId(), 
-                param.getChargeId(), 
+                param.getDeviceCode(),
+                Integer.valueOf(param.getChargeId()),
                 param.getMinute(), 
                 param.getSecond()
             );
@@ -682,10 +793,10 @@ public class MiniDeviceController {
             result.put("success", true);
             result.put("cmd", command);
             result.put("message", "获取控制指令成功");
-            result.put("deviceId", param.getDeviceId());
+            result.put("deviceId", param.getDeviceCode());
             result.put("orderId", param.getChargeId());
             
-            log.info("小程序获取设备控制指令成功，用户ID：{}，设备ID：{}", currentUserId, param.getDeviceId());
+            log.info("小程序获取设备控制指令成功，用户ID：{}，设备ID：{}", currentUserId, param.getDeviceCode());
             return CommonResult.data(result);
             
         } catch (Exception e) {
@@ -695,82 +806,26 @@ public class MiniDeviceController {
     }
 
     /**
-     * 验证设备控制权限
-     * 检查订单和设备是否可以进行控制操作
+     * 更新设备控制结果
+     * 小程序端调用此接口更新设备控制结果
      *
      * @author AI Assistant
      * @date 2025/01/30
      */
     @ApiOperationSupport(order = 13)
-    @Operation(summary = "验证设备控制权限")
-    @CommonLog("小程序验证设备控制权限")
-    @SaClientCheckLogin
-    @GetMapping("/miniprogram/device/control/validatePermission")
-    public CommonResult<Boolean> validateDeviceControlPermission(@RequestParam String orderId, @RequestParam String deviceId) {
-        try {
-            log.info("小程序验证设备控制权限，订单ID：{}，设备ID：{}", orderId, deviceId);
-            
-            // 1. 验证参数
-            if (StrUtil.isBlank(orderId) || StrUtil.isBlank(deviceId)) {
-                return CommonResult.error("订单ID和设备ID不能为空");
-            }
-            
-            // 2. 获取当前用户ID
-            String currentUserId = StpClientUtil.getLoginId().toString();
-            
-            // 3. 调用设备API验证权限
-            Boolean hasPermission = deviceApi.validateDeviceControlPermission(orderId, deviceId, currentUserId);
-            
-            log.info("小程序验证设备控制权限完成，用户ID：{}，订单ID：{}，设备ID：{}，结果：{}", 
-                    currentUserId, orderId, deviceId, hasPermission);
-            return CommonResult.data(hasPermission != null ? hasPermission : false);
-            
-        } catch (Exception e) {
-            log.error("验证设备控制权限异常，订单ID：{}，设备ID：{}", orderId, deviceId, e);
-            return CommonResult.error("验证设备控制权限失败：" + e.getMessage());
-        }
-    }
-
-    /**
-     * 更新设备控制执行结果
-     * 小程序端执行设备控制后，调用此接口更新执行状态
-     *
-     * @author AI Assistant
-     * @date 2025/01/30
-     */
-    @ApiOperationSupport(order = 14)
-    @Operation(summary = "更新设备控制执行结果")
+    @Operation(summary = "更新设备控制结果")
     @CommonLog("小程序更新设备控制结果")
     @SaClientCheckLogin
     @PostMapping("/miniprogram/device/control/updateResult")
-    public CommonResult<Void> updateDeviceControlResult(@RequestBody @Valid MiniDeviceControlResultDto param) {
+    public CommonResult<Boolean> updateDeviceControlResult(@RequestBody @Valid MiniDeviceControlResultDto param) {
         try {
             log.info("小程序更新设备控制结果，参数：{}", param);
-            
-            // 1. 设置当前用户ID
-            String currentUserId = StpClientUtil.getLoginId().toString();
-            param.setUserId(currentUserId);
-            
-            // 2. 调用设备API更新控制结果
-            Boolean updateSuccess = deviceApi.updateDeviceControlResult(
-                param.getOrderId(), 
-                param.getDeviceId(), 
-                param.getSuccess(), 
-                param.getMessage(), 
-                currentUserId
-            );
-            
-            if (updateSuccess == null || !updateSuccess) {
-                return CommonResult.error("更新控制结果失败");
-            }
-            
-            log.info("小程序更新设备控制结果成功，用户ID：{}，订单ID：{}，设备ID：{}，结果：{}", 
-                    currentUserId, param.getOrderId(), param.getDeviceId(), param.getSuccess());
-            return CommonResult.ok();
-            
+            return CommonResult.data(deviceApi.updateDeviceControlResult(param.getOrderId(), param.getDeviceId(), param.getSuccess(), param.getMessage(), param.getUserId()));
         } catch (Exception e) {
             log.error("更新设备控制结果异常", e);
             return CommonResult.error("更新设备控制结果失败：" + e.getMessage());
         }
     }
+
+
 } 
